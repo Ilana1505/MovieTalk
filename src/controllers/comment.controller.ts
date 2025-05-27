@@ -8,7 +8,7 @@ class CommentController extends BaseController<iComment> {
     }
 
       async CreateItem(req: Request, res: Response) {
-            const _id = req.query.userId;
+            const _id = (req as any).user._id;
             const comment = {
                 ...req.body,
                 sender: _id
