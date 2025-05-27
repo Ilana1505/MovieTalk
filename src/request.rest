@@ -1,0 +1,98 @@
+### Register a new user
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "ilana15@gmail.com",
+  "password": "1234"
+}
+
+### Login a user
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "ilana15@gmail.com",
+  "password": "1234"
+}
+
+### Refresh a user token
+POST http://localhost:3000/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3Mzc4OTY3NjF9.haKweUQPoT9GRBiGda6d_PWoLbpbDoR9bR5isI1uXfk"
+}
+
+### Create a new post with an access token
+POST http://localhost:3000/posts
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+
+{
+  "title": "My First Post",
+  "content": "This is the content of my first post."
+}
+
+### Get all posts
+GET http://localhost:3000/posts
+
+### Get post by ID
+GET http://localhost:3000/posts/678cf8ed46946bf2f9dd16be
+
+### Get posts by sender
+GET http://localhost:3000/posts?sender=678cf8b746946bf2f9dd16ba
+
+### Update a post with an access token
+PUT http://localhost:3000/posts/678cf8ed46946bf2f9dd16be
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+
+{
+  "title": "Updated Title",
+  "content": "Updated content of the post."
+}
+
+### Delete a post with an access token
+DELETE http://localhost:3000/posts/678cf8ed46946bf2f9dd16be
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+
+### Create a new comment with an access token
+POST http://localhost:3000/comments
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+
+{
+  "comment": "This is a comment",
+  "postId": "678cf8f146946bf2f9dd16c0"
+}
+
+### Get all comments
+GET http://localhost:3000/comments
+
+### Get comments by postId
+GET http://localhost:3000/comments/posts/678cf8f146946bf2f9dd16c0
+
+### Get comment by ID
+GET http://localhost:3000/comments/678cf92046946bf2f9dd16c9
+
+### Update comment with an access token
+PUT http://localhost:3000/comments/678cf92046946bf2f9dd16c9
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+
+{
+  "comment": "This is the updated comment content"
+}
+
+### Delete comment with an access token
+DELETE http://localhost:3000/comments/678cf92046946bf2f9dd16c9
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+
+### Logout a user
+POST http://localhost:3000/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3Mzc4OTY3NjF9.haKweUQPoT9GRBiGda6d_PWoLbpbDoR9bR5isI1uXfk"
+}
