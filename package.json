@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon ./src/server.ts",
-    "start": "copy .env.dev .env &&tsc && node ./dist/src/server.js",
-    "test": "copy .env.test .env &&tsc && jest --detectOpenHandles --forceExit --coverage --runInBand",
-    "testPost": "copy .env.test .env &&tsc && jest --detectOpenHandles --forceExit post.test.ts",
-    "testAuth": "copy .env.test .env &&tsc && jest --detectOpenHandles --forceExit auth.test.ts",
-    "testComment": "copy .env.test .env &&tsc && jest --detectOpenHandles --forceExit comment.test.ts",
-    "lint": "eslint . --ext .ts"
-  },
+  "dev": "nodemon --watch src --exec ts-node src/server.ts",
+  "start": "copy .env.dev .env && tsc && node ./dist/src/server.js",
+  "test": "copy .env.test .env && jest --detectOpenHandles --forceExit --coverage --runInBand",
+  "testPost": "copy .env.test .env && jest --detectOpenHandles --forceExit src/tests/post.test.ts",
+  "testAuth": "copy .env.test .env && jest --detectOpenHandles --forceExit src/tests/auth.test.ts",
+  "testComment": "copy .env.test .env && jest --detectOpenHandles --forceExit src/tests/comment.test.ts",
+  "lint": "eslint . --ext .ts"
+},
+
   "keywords": [],
   "author": "",
   "license": "ISC",
