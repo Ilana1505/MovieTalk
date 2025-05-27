@@ -8,7 +8,7 @@ class PostController extends BaseController <iPost>{
     }
 
     async CreateItem(req: Request, res: Response) {
-        const _id = req.query.userId;
+        const _id = (req as any).user._id;
         const post = {
             ...req.body,
             sender: _id

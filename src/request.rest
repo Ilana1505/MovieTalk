@@ -27,7 +27,7 @@ Content-Type: application/json
 ### Create a new post with an access token
 POST http://localhost:3000/posts
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODM1YWQxZmFkMjMwYzhiMDc3NGQxZTgiLCJyYW5kb20iOjk1NjM3OCwiaWF0IjoxNzQ4MzUyMzQ0LCJleHAiOjE3NDgzNTI5NDR9.udlRY2YOaFhcs5mhGk_M2AEZT4FvOpygu293ZEmJMtw
 
 {
   "title": "My First Post",
@@ -38,15 +38,15 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiN
 GET http://localhost:3000/posts
 
 ### Get post by ID
-GET http://localhost:3000/posts/678cf8ed46946bf2f9dd16be
+GET http://localhost:3000/posts/6835bd714050f01eefc8f005
 
 ### Get posts by sender
-GET http://localhost:3000/posts?sender=678cf8b746946bf2f9dd16ba
+GET http://localhost:3000/posts?sender=6835bd714050f01eefc8f005
 
 ### Update a post with an access token
-PUT http://localhost:3000/posts/678cf8ed46946bf2f9dd16be
+PUT http://localhost:3000/posts/6835bd714050f01eefc8f005
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODM1YWQxZmFkMjMwYzhiMDc3NGQxZTgiLCJyYW5kb20iOjk1NjM3OCwiaWF0IjoxNzQ4MzUyMzQ0LCJleHAiOjE3NDgzNTI5NDR9.udlRY2YOaFhcs5mhGk_M2AEZT4FvOpygu293ZEmJMtw
 
 {
   "title": "Updated Title",
@@ -54,8 +54,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiN
 }
 
 ### Delete a post with an access token
-DELETE http://localhost:3000/posts/678cf8ed46946bf2f9dd16be
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3MzcyOTI1NjF9.hXH-x9BT23Cxj5lfX9q2wQvtKtlNkCNp6oqxsppV3gY
+DELETE http://localhost:3000/posts/6835bd714050f01eefc8f005
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODM1YWQxZmFkMjMwYzhiMDc3NGQxZTgiLCJyYW5kb20iOjk1NjM3OCwiaWF0IjoxNzQ4MzUyMzQ0LCJleHAiOjE3NDgzNTI5NDR9.udlRY2YOaFhcs5mhGk_M2AEZT4FvOpygu293ZEmJMtw
 
 ### Create a new comment with an access token
 POST http://localhost:3000/comments

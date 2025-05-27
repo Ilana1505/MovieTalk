@@ -1,15 +1,30 @@
-// import { Request, Response, NextFunction } from 'express';
-// import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
-// export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
-//   const token = req.header('Authorization')?.replace('Bearer ', '');
-//   if (!token) return res.status(401).json({ message: 'No token provided' });
+type TokenPayload = {
+  _id: string;
+};
 
-//   try {
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-//     req.user = decoded;
-//     next();
-//   } catch (err) {
-//     res.status(401).json({ message: 'Invalid token' });
-//   }
-// };
+export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    res.status(401).json({ message: 'No token provided' });
+    return;
+  }
+
+  if (!process.env.TOKEN_SECRET) {
+    res.status(500).json({ message: 'Missing TOKEN_SECRET' });
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET) as TokenPayload;
+    (req as any).user = { _id: decoded._id };
+    next();
+  } catch (err) {
+    res.status(403).json({ message: 'Invalid token' });
+    return;
+  }
+};

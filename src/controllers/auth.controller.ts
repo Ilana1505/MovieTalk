@@ -200,26 +200,26 @@ const Refresh = async (req: Request, res: Response) => {
 };
 
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (!token) {
-        res.status(401).send("missing token");
-        return;
-    }
-    if (!process.env.TOKEN_SECRET) {
-        res.status(400).send("missing auth configuration");
-        return;
-    }
-    jwt.verify(token, process.env.TOKEN_SECRET, (error, data) => {
-        if (error) {
-            res.status(403).send("invalid token");
-            return;
-        }
-        const payload = data as TokenPayload;
-        req.query.userId = payload._id;
-        next();
-    });
-};
+// export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+//     const authHeader = req.headers['authorization'];
+//     const token = authHeader && authHeader.split(' ')[1];
+//     if (!token) {
+//         res.status(401).send("missing token");
+//         return;
+//     }
+//     if (!process.env.TOKEN_SECRET) {
+//         res.status(400).send("missing auth configuration");
+//         return;
+//     }
+//     jwt.verify(token, process.env.TOKEN_SECRET, (error, data) => {
+//         if (error) {
+//             res.status(403).send("invalid token");
+//             return;
+//         }
+//         const payload = data as TokenPayload;
+//         req.query.userId = payload._id;
+//         next();
+//     });
+// };
 
 export default { Register, Login, Logout, Refresh };
