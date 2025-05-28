@@ -1,15 +1,13 @@
 import express, { Express } from "express";
+const app = express();
 import dotenv from "dotenv";
+dotenv.config();
 import mongoose from "mongoose";
 import PostRoute from "./routes/post.route";
 import CommentRoute from "./routes/comment.route";
 import AuthRoute from "./routes/auth.route";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
-
-dotenv.config();
-
-const app = express();
 
 // Middlewares
 app.use(express.json()); 

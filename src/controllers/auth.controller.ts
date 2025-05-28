@@ -30,6 +30,12 @@ const Register = async (req: Request, res: Response) => {
 const GenerateTokens = (_id: string): { accessToken: string; refreshToken: string } => {
   const random = Math.floor(Math.random() * 1000000);
 
+  console.log("🔍 ENV DEBUG:", {
+    TOKEN_SECRET: process.env.TOKEN_SECRET,
+    TOKEN_EXPIRATION: process.env.TOKEN_EXPIRATION,
+    REFRESH_TOKEN_EXPIRATION: process.env.REFRESH_TOKEN_EXPIRATION,
+  });
+  
   const secret = process.env.TOKEN_SECRET;
   const accessExpiration = process.env.TOKEN_EXPIRATION;
   const refreshExpiration = process.env.REFRESH_TOKEN_EXPIRATION;
