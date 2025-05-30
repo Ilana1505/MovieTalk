@@ -1,5 +1,6 @@
 import express from 'express';
 import AuthController from '../controllers/auth.controller';
+import { Request, Response } from 'express';
 
 const router = express.Router();
 
@@ -61,7 +62,13 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/User'
  */
-router.post("/register", AuthController.Register);
+router.post("/register", async (req: Request, res: Response, next) => {
+  try {
+    await AuthController.Register(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * @swagger
@@ -98,7 +105,13 @@ router.post("/register", AuthController.Register);
  *       '400':
  *         description: Invalid email or password
  */
-router.post("/login", AuthController.Login);
+router.post("/login", async (req: Request, res: Response, next) => {
+  try {
+    await AuthController.Login(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * @swagger
@@ -125,7 +138,13 @@ router.post("/login", AuthController.Login);
  *       403:
  *         description: Invalid or expired refresh token
  */
-router.post("/logout", AuthController.Logout);
+router.post("/logout", async (req: Request, res: Response, next) => {
+  try {
+    await AuthController.Logout(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * @swagger
@@ -157,6 +176,59 @@ router.post("/logout", AuthController.Logout);
  *       403:
  *         description: Missing or invalid refresh token
  */
-router.post("/refresh", AuthController.Refresh);
+router.post("/refresh", async (req: Request, res: Response, next) => {
+  try {
+    await AuthController.Refresh(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @swagger
+ * /auth/login-with-google:
+ *   post:
+ *     summary: Login using Google OAuth token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Google ID token from the client
+ *     responses:
+ *       200:
+ *         description: Successfully logged in with Google
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 fullName:
+ *                   type: string
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       400:
+ *         description: Invalid Google token
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/login-with-google", (req: Request, res: Response) => {
+  AuthController.LoginWithGoogle(req, res);
+});
+
+
 
 export default router;
