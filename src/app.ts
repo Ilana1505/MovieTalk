@@ -1,26 +1,28 @@
 import express, { Express } from "express";
-const app = express();
 import dotenv from "dotenv";
-dotenv.config();
 import mongoose from "mongoose";
+import cors from "cors";
 import PostRoute from "./routes/post.route";
 import CommentRoute from "./routes/comment.route";
 import AuthRoute from "./routes/auth.route";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 
-// Middlewares
-app.use(express.json()); 
+dotenv.config();
+
+const app = express();
+
+// ✅ הגדרת CORS בצורה נכונה
+app.use(cors({
+  origin: 'http://localhost:3001',
+  credentials: true
+}));
+
+// ✅ פרסינג של JSON ו־URL-encoded
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "*");
-  res.header("Access-Control-Allow-Headers", "*");
-  next();
-});
-
-// Routes
+// ✅ ראוטים
 app.get("/", (req, res) => {
   res.send("🎬 MovieTalk Backend API is running!");
 });
@@ -28,7 +30,7 @@ app.use("/posts", PostRoute);
 app.use("/comments", CommentRoute);
 app.use("/auth", AuthRoute);
 
-// Swagger
+// ✅ הגדרת Swagger
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -39,12 +41,13 @@ const options = {
     },
     servers: [{ url: `http://localhost:${process.env.PORT}` }],
   },
-  apis: ["./src/routes/*.ts"],
+  apis: ["./src/routes/*.ts"], // ודאי שהנתיב נכון לפרויקט שלך
 };
+
 const specs = swaggerJsDoc(options);
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
 
-// DB Init
+// ✅ התחברות למסד הנתונים
 const initApp = (): Promise<Express> => {
   return new Promise((resolve, reject) => {
     const db = mongoose.connection;
