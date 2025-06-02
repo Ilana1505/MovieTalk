@@ -9,7 +9,7 @@ import { OAuth2Client } from 'google-auth-library';
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 type TokenPayload = {
-    _id: string;
+  _id: string;
 };
 
 const GenerateTokens = (_id: string): { accessToken: string; refreshToken: string } => {
@@ -107,42 +107,26 @@ const Login = async (req: Request, res: Response) => {
 };
 
 const Logout = async (req: Request, res: Response) => {
-    const refreshToken = req.body.refreshToken;
-    if (!refreshToken) {
-        res.status(400).send("missing refresh token");
-        return;
-    }
+  const refreshToken = req.body.refreshToken;
 
-    if (!process.env.TOKEN_SECRET) {
-        res.status(400).send("missing auth configuration");
-        return;
-    }
-    jwt.verify(refreshToken, process.env.TOKEN_SECRET, async (error: unknown, data: unknown) => {
-        if (error) {
-            res.status(403).send("invalid token");
-            return;
-        }
-        const payload = data as TokenPayload;
-        try {
-            const user = await UserModel.findOne({ _id: payload._id });
-            if (!user) {
-                res.status(400).send("invalid token");
-                return;
-            }
-            if (!user.refreshTokens || !user.refreshTokens.includes(refreshToken)) {
-                res.status(400).send("invalid token");
-                user.refreshTokens = [];
-                await user.save();
-                return;
-            }
-            const tokens = user.refreshTokens.filter((token) => token !== refreshToken);
-            user.refreshTokens = tokens;
-            await user.save();
-            res.status(200).send("logged out");
-        } catch (error) {
-            res.status(400).send(error);
-        }
-    });
+  if (!refreshToken || !process.env.TOKEN_SECRET) {
+    return res.status(400).send("Missing refresh token or configuration");
+  }
+
+  jwt.verify(refreshToken, process.env.TOKEN_SECRET, async (err: Error | null, data: unknown) => {
+    if (err) return res.status(403).send("Invalid token");
+
+    const payload = data as TokenPayload;
+    const user = await UserModel.findById(payload._id);
+    if (!user) return res.status(400).send("Invalid token");
+
+    user.refreshTokens = (user.refreshTokens || []).filter(
+      (token) => token !== refreshToken
+    );
+    await user.save();
+
+    res.status(200).send("Logged out");
+  });
 };
 
 const Refresh = async (req: Request, res: Response) => {

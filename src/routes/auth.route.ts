@@ -163,7 +163,9 @@ router.post("/logout", (req: Request, res: Response, next) => {
  *       403:
  *         description: Missing or invalid refresh token
  */
-router.post("/refresh", AuthController.Refresh);
+router.post("/refresh", (req: Request, res: Response, next) => {
+  AuthController.Refresh(req, res).catch(next);
+});
 
 /**
  * @swagger
