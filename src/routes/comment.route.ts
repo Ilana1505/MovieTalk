@@ -161,7 +161,16 @@ router.get('/posts/:postId', CommentController.GetAll.bind(CommentController));
  *       400:
  *         description: Invalid ID format
  */
-router.get('/:id', CommentController.GetById.bind(CommentController));
+router.get(
+  '/:id',
+  async (req, res, next) => {
+	try {
+	  await CommentController.GetById.call(CommentController, req, res);
+	} catch (err) {
+	  next(err);
+	}
+  }
+);
 
 /**
  * @swagger
@@ -203,7 +212,17 @@ router.get('/:id', CommentController.GetById.bind(CommentController));
  *       400:
  *         description: Invalid input
  */
-router.put('/:id', authMiddleware, CommentController.UpdateItem.bind(CommentController));
+router.put(
+  '/:id',
+  authMiddleware,
+  async (req, res, next) => {
+	try {
+	  await CommentController.UpdateItem.call(CommentController, req, res);
+	} catch (err) {
+	  next(err);
+	}
+  }
+);
 
 /**
  * @swagger
@@ -227,6 +246,16 @@ router.put('/:id', authMiddleware, CommentController.UpdateItem.bind(CommentCont
  *       404:
  *         description: Comment not found
  */
-router.delete('/:id', authMiddleware, CommentController.DeleteItem.bind(CommentController));
+router.delete(
+  '/:id',
+  authMiddleware,
+  async (req, res, next) => {
+	try {
+	  await CommentController.DeleteItem.call(CommentController, req, res);
+	} catch (err) {
+	  next(err);
+	}
+  }
+);
 
 export default router;

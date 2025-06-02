@@ -41,7 +41,6 @@ let postId = "";
 const testPost = {
     title: "Test title",
     content: "Test content",
-    sender: userInfo._id,
   }; 
   
 const invalidPost = {
@@ -58,7 +57,7 @@ describe("Post test", () => {
 
     test("Test adding new post", async () => {
         const response = await request(app).post("/posts")
-        .set("authorization", "JWT " + userInfo.token)
+        .set("authorization", "Bearer " + userInfo.token)
         .send(testPost);
         expect(response.statusCode).toBe(201);
         expect(response.body.title).toBe(testPost.title);
@@ -104,7 +103,7 @@ describe("Post test", () => {
 
     test("Test update post", async () => {
         const response = await request(app).put("/posts/" + postId)
-        .set("authorization", "JWT " + userInfo.token)
+        .set("authorization", "Bearer " + userInfo.token)
         .send({ title: "Update Title", content: "Updated Content" });
         expect(response.statusCode).toBe(200);
         expect(response.body.title).toBe("Update Title");
@@ -113,7 +112,7 @@ describe("Post test", () => {
 
     test("Test delete post", async () => {
         const response = await request(app).delete("/posts/" + postId)
-        .set("authorization", "JWT " + userInfo.token);
+        .set("authorization", "Bearer " + userInfo.token);
         expect(response.statusCode).toBe(200);
         const responseGet = await request(app).get("/posts/" + postId);
         expect(responseGet.statusCode).toBe(404);
@@ -121,7 +120,7 @@ describe("Post test", () => {
 
     test("Test delete post not found", async () => {
         const response = await request(app).delete("/posts/1234567890")
-        .set("authorization", "JWT " + userInfo.token);
+        .set("authorization", "Bearer " + userInfo.token);
         expect(response.statusCode).toBe(404);
     });
 });

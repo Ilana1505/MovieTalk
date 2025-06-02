@@ -21,6 +21,7 @@ afterAll(async () => {
 });
 
 type UserInfo = {
+    fullName?: string;
     email: string;
     password: string;
     accessToken?: string;
@@ -29,6 +30,7 @@ type UserInfo = {
 };
 
 const userInfo: UserInfo = {
+    fullName: "Ilana Barkin",
     email: "ilana@gmail.com",
     password: "123456"
 };
@@ -56,14 +58,14 @@ describe("Auth test", () => {
             email: userInfo.email
         });
         expect(response.statusCode).not.toBe(200);
-        expect(response.text).toBe("missing email or password");
+expect(response.text).toBe("Missing full name, email, or password");
     });
     
 
     test("Test registration without email", async () => {
         const response = await request(app).post("/auth/register").send({ password: "123456" });
         expect(response.statusCode).toBe(400);
-        expect(response.text).toBe("missing email or password");
+expect(response.text).toBe("Missing full name, email, or password");
     });
 
     test("Test auth login", async () => {
@@ -95,7 +97,7 @@ describe("Auth test", () => {
     test("Test login with empty body", async () => {
         const response = await request(app).post("/auth/login").send({});
         expect(response.statusCode).toBe(400);
-        expect(response.text).toBe("wrong email or password");
+expect(response.text).toBe("Missing email or password");
     });
 
     test("Test auth login fail with false password", async () => {
@@ -115,26 +117,23 @@ describe("Auth test", () => {
         const response = await request(app).post("/posts").send({
             title: "My First post",
             content: "This is my first post",
-            sender: "invalid sender",
         });
         expect(response.statusCode).not.toBe(201);
         const response2 = await request(app).post("/posts")
-            .set("authorization", "JWT " + userInfo.accessToken)
+            .set("authorization", "Bearer " + userInfo.accessToken)
             .send({
                 title: "My First post",
                 content: "This is my first post",
-                sender: "invalid sender",
             });
         expect(response2.statusCode).toBe(201);
     });
 
     test("Test get protected API invalid token", async () => {
         const response = await request(app).post("/posts")
-            .set("authorization", "JWT " + userInfo.accessToken + "9")
+            .set("authorization", "Bearer " + userInfo.accessToken + "9")
             .send({
                 title: "My First post",
                 content: "This is my first post",
-                sender: userInfo._id,
             });
         expect(response.statusCode).not.toBe(201);
     });
@@ -163,7 +162,11 @@ describe("Auth test", () => {
         expect(response.statusCode).toBe(400);
         expect(response.text).toBe("invalid token");
         
-        await request(app).post("/auth/register").send(userInfo);
+        await request(app).post("/auth/register").send({
+    ...userInfo,
+    fullName: "Ilana Barakin"
+});
+
         const loginRes = await request(app).post("/auth/login").send(userInfo);
         userInfo.accessToken = loginRes.body.accessToken;
         userInfo.refreshToken = loginRes.body.refreshToken;
@@ -279,11 +282,10 @@ describe("Auth test", () => {
         await new Promise(resolve => setTimeout(resolve, 6000));
 
         const response2 = await request(app).post("/posts")
-            .set("authorization", "JWT " + userInfo.accessToken)
+            .set("authorization", "Bearer " + userInfo.accessToken)
             .send({
                 title: "My First post",
-                content: "This is my first post",
-                sender: "invalid sender",
+                content: "This is my first post"
             });
         expect(response2.statusCode).not.toBe(201);
 
@@ -295,11 +297,10 @@ describe("Auth test", () => {
         userInfo.refreshToken = response3.body.refreshToken;
 
         const response4 = await request(app).post("/posts")
-            .set("authorization", "JWT " + userInfo.accessToken)
+            .set("authorization", "Bearer " + userInfo.accessToken)
             .send({
                 title: "My First post",
                 content: "This is my first post",
-                sender: "invalid sender",
             });
         expect(response4.statusCode).toBe(201);
     });

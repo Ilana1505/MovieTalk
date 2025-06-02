@@ -8,17 +8,16 @@ import CommentRoute from "./routes/comment.route";
 import AuthRoute from "./routes/auth.route";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
+import cors from "cors";
+
+app.use(cors({
+  origin: 'http://localhost:3001',
+  credentials: true
+}));
 
 // Middlewares
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
-
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "*");
-  res.header("Access-Control-Allow-Headers", "*");
-  next();
-});
 
 // Routes
 app.get("/", (req, res) => {

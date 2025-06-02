@@ -9,6 +9,7 @@ import { beforeAll, afterAll, describe, test, expect } from '@jest/globals';
 let app: Express;
 
 type UserInfo = {
+    fullName?: string;
     email: string;
     password: string;
     token?: string;
@@ -16,6 +17,7 @@ type UserInfo = {
   };
 
 const userInfo: UserInfo = {
+    fullName: "Ilana Barkin",
     email: "ilana@gmail.com",
     password: "123456",
   }
@@ -42,7 +44,6 @@ let commentId = "";
 const testComment = {
     comment: "Test title",
     postId: "123456789123456789123456",
-    sender: userInfo._id,
 };
   
 const invalidComment = {
@@ -134,14 +135,14 @@ describe("Comment test", () => {
     
     test("Test update comment not found", async () => {
         const response = await request(app).put("/comments/6779872076207a7fc9997020")
-        .set("authorization", "JWT " + userInfo.token)
+        .set("authorization", "Bearer " + userInfo.token)
         .send({ comment: "Another update" });
         expect(response.statusCode).toBe(404);
     });
 
     test("Test delete comment", async () => {
         const response = await request(app).delete("/comments/" + commentId)
-        .set("authorization", "JWT " + userInfo.token);
+        .set("authorization", "Bearer " + userInfo.token);
         expect(response.statusCode).toBe(200);
         const responseGet = await request(app).get("/comments/" + commentId);
         expect(responseGet.statusCode).toBe(404);
@@ -149,7 +150,7 @@ describe("Comment test", () => {
 
     test("Test delete comment not found", async () => {
         const response = await request(app).delete("/comments/1234567890")
-        .set("authorization", "JWT " + userInfo.token);
+        .set("authorization", "Bearer " + userInfo.token);
         expect(response.statusCode).toBe(404);
     });
 });

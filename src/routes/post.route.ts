@@ -137,7 +137,9 @@ router.get('/', PostController.GetAll.bind(PostController));
  *       400:
  *         description: Invalid ID format
  */
-router.get('/:id', PostController.GetById.bind(PostController));
+router.get('/:id', (req, res) => {
+  PostController.GetById(req, res);
+});
 
 /**
  * @swagger
@@ -183,7 +185,13 @@ router.get('/:id', PostController.GetById.bind(PostController));
  *       400:
  *         description: Invalid input
  */
-router.put('/:id', authMiddleware, PostController.UpdateItem.bind(PostController));
+router.put('/:id', authMiddleware, async (req, res, next) => {
+  try {
+    await PostController.UpdateItem(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * @swagger
@@ -207,6 +215,12 @@ router.put('/:id', authMiddleware, PostController.UpdateItem.bind(PostController
  *       404:
  *         description: Post not found
  */
-router.delete('/:id', authMiddleware, PostController.DeleteItem.bind(PostController));
+router.delete('/:id', authMiddleware, async (req, res, next) => {
+  try {
+    await PostController.DeleteItem(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;

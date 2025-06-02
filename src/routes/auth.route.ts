@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import AuthController from '../controllers/auth.controller';
 
 const router = express.Router();
@@ -61,7 +61,9 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/User'
  */
-router.post("/register", AuthController.Register);
+router.post("/register", (req: Request, res: Response, next) => {
+  AuthController.Register(req, res).catch(next);
+});
 
 /**
  * @swagger
@@ -98,7 +100,9 @@ router.post("/register", AuthController.Register);
  *       '400':
  *         description: Invalid email or password
  */
-router.post("/login", AuthController.Login);
+router.post("/login", (req: Request, res: Response, next) => {
+  AuthController.Login(req, res).catch(next);
+});
 
 /**
  * @swagger
@@ -125,7 +129,9 @@ router.post("/login", AuthController.Login);
  *       403:
  *         description: Invalid or expired refresh token
  */
-router.post("/logout", AuthController.Logout);
+router.post("/logout", (req: Request, res: Response, next) => {
+  AuthController.Logout(req, res).catch(next);
+});
 
 /**
  * @swagger
@@ -158,5 +164,49 @@ router.post("/logout", AuthController.Logout);
  *         description: Missing or invalid refresh token
  */
 router.post("/refresh", AuthController.Refresh);
+
+/**
+ * @swagger
+ * /auth/login-with-google:
+ *   post:
+ *     summary: Login or register a user with Google OAuth
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Google OAuth ID token
+ *                 example: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJh..."
+ *     responses:
+ *       200:
+ *         description: Successfully authenticated with Google
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 fullName:
+ *                   type: string
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       400:
+ *         description: Missing or invalid Google token
+ *       500:
+ *         description: Google login failed
+ */
+router.post("/login-with-google", (req: Request, res: Response) => {
+  AuthController.LoginWithGoogle(req, res);
+});
 
 export default router;

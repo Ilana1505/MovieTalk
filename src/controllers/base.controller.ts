@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Model } from "mongoose";
+import mongoose from "mongoose";
 
 class BaseController<T> {
     model: Model<T>;
@@ -45,47 +46,64 @@ class BaseController<T> {
     }
 
     async GetById(req: Request, res: Response) {
-        const Id = req.params.id;
-        try {
-            const data = await this.model.findById(Id);
-            if (data) {
-                res.send(data);
-            } else {
-                res.status(404).send("Id not found");
-            }
-        } catch (error) {
-            res.status(400).send(error);
-        }
+    const Id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(Id)) {
+        return res.status(404).send("Invalid ID");
     }
 
-    async UpdateItem(req: Request, res: Response) {
-        const id = req.params.id;
-
-        try {
-            const item = await this.model.findById(id);
-            if (!item) {
-                res.status(404).send("Item not found");
-                return;
-            }
-
-            const updatedItem = await this.model.findByIdAndUpdate(id, req.body, { new: true });
-            res.status(200).send(updatedItem);
-        } catch (error) {
-            res.status(400).send(error);
+    try {
+        const data = await this.model.findById(Id);
+        if (data) {
+            res.send(data);
+        } else {
+            res.status(404).send("Id not found");
         }
+    } catch (error) {
+        res.status(400).send(error);
     }
-
-    async DeleteItem(req: Request, res: Response) {
-        const Id = req.params.id;
-        try {
-            await this.model.findByIdAndDelete(Id);
-            res.status(200).send("Item deleted");
-        } catch (error) {
-            res.status(404).send(error);
-        }
-    }
-    
 }
 
+
+ async UpdateItem(req: Request, res: Response): Promise<Response | void> {
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).send("Invalid ID");
+    }
+
+    try {
+        const item = await this.model.findByIdAndUpdate(id, req.body, { new: true });
+
+        if (!item) {
+            return res.status(404).send("Item not found");
+        }
+
+        res.status(200).send(item); 
+    } catch (error) {
+        res.status(500).send(error);
+    }
+}
+
+
+async DeleteItem(req: Request, res: Response): Promise<Response | void> {
+    const Id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(Id)) {
+        return res.status(404).send("Invalid ID");
+    }
+
+    try {
+        const deleted = await this.model.findByIdAndDelete(Id);
+        if (!deleted) {
+            return res.status(404).send("Item not found");
+        }
+        return res.status(200).send("Item deleted");
+    } catch (error) {
+        res.status(500).send(error);
+    }
+}
+
+}
 
 export default BaseController;
