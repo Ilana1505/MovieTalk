@@ -244,4 +244,49 @@ router.delete('/:id', authMiddleware, async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /posts/{id}/like:
+ *   post:
+ *     summary: Toggle like on a post
+ *     description: Adds a like to the post if not already liked, or removes it if already liked.
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the post to like/unlike
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successfully toggled like
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 likes:
+ *                   type: integer
+ *               example:
+ *                 message: "Post liked"
+ *                 likes: 5
+ *       404:
+ *         description: Post not found
+ *       401:
+ *         description: Unauthorized
+ */
+router.post("/:id/like", authMiddleware, async (req, res, next) => {
+  try {
+    await PostController.toggleLike(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 export default router;

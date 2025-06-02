@@ -38,6 +38,29 @@ class PostController extends BaseController<iPost> {
             return;
         }
     }
+
+    // הוספת לייק
+async toggleLike(req: Request, res: Response) {
+  const userId = (req as any).user._id;
+  const postId = req.params.id;
+
+  const post = await this.model.findById(postId);
+  if (!post) return res.status(404).json({ message: "Post not found" });
+
+  // Ensure likes is always an array
+  if (!Array.isArray(post.likes)) {
+    post.likes = [];
+  }
+
+  const alreadyLiked = post.likes.includes(userId);
+  post.likes = alreadyLiked
+    ? post.likes.filter((id: string) => id !== userId)
+    : [...post.likes, userId];
+
+  await post.save();
+  res.status(200).json(post);
+}
+
 }
 
 export default new PostController();
