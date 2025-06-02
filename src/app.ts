@@ -8,6 +8,7 @@ import CommentRoute from "./routes/comment.route";
 import AuthRoute from "./routes/auth.route";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
+import path from "path";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/uploads/posts", express.static(path.join(__dirname, "../uploads/posts")));
 
 app.get("/", (req, res) => {
   res.send("🎬 MovieTalk Backend API is running!");

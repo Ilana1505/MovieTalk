@@ -18,11 +18,17 @@ class PostController extends BaseController<iPost> {
 
             console.log("USER FROM TOKEN:", user);
 
+            const imagePath = req.file ? `/uploads/posts/${req.file.filename}` : undefined;
+
+            
             const post: iPost = {
-                title: req.body.title,
-                content: req.body.content,
-                sender: user._id
+              title: req.body.title,
+             description: req.body.description,
+             review: req.body.review,
+             image: imagePath,
+             sender: user._id
             };
+
             const created = await this.model.create(post);
             res.status(201).send(created);
             return;

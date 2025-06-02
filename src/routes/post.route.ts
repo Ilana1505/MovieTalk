@@ -1,8 +1,29 @@
 import express from 'express';
 import PostController from '../controllers/post.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
+
+const uploadDir = path.join(__dirname, "../../uploads/posts");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Setup multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `post-${uniqueSuffix}${ext}`);
+  }
+});
+const upload = multer({ storage });
 
 /**
  * @swagger
@@ -51,37 +72,37 @@ const router = express.Router();
  * @swagger
  * /posts:
  *   post:
- *     summary: Creates a new post
- *     description: Creates a new post with a title and content.
+ *     summary: Creates a new movie post
+ *     description: Creates a new post with a title, description, review, and optional image.
  *     security:
- *       - bearerAuth: []  
+ *       - bearerAuth: []
  *     tags: [Posts]
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
  *               title:
- *                 type: string  
- *                 description: The post title
- *                 example: "My first post"         
- *               content:
  *                 type: string
- *                 description: The post content
- *                 example: "This is my first post ....."
+ *                 example: "Inception"
+ *               description:
+ *                 type: string
+ *                 example: "A sci-fi thriller about dream invasion"
+ *               review:
+ *                 type: string
+ *                 example: "Brilliant direction and concept"
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
- *         description: The created post
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Post'
+ *         description: Created post
  *       400:
- *         description: Missing or incorrect input
+ *         description: Bad request
  */
-router.post('/', authMiddleware, PostController.CreateItem.bind(PostController));
+router.post('/', authMiddleware, upload.single('image'), PostController.CreateItem.bind(PostController));
 
 /**
  * @swagger
