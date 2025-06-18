@@ -4,6 +4,7 @@ import { authMiddleware } from '../middleware/auth.middleware';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { getUserPosts } from "../controllers/post.controller";
 
 const router = express.Router();
 
@@ -131,6 +132,11 @@ router.post('/', authMiddleware, upload.single('image'), PostController.CreateIt
  *         description: Invalid query parameters
  */
 router.get('/', PostController.GetAll.bind(PostController));
+
+
+router.get("/my-posts", authMiddleware, (req, res) => {
+  return getUserPosts(req as any, res);
+});
 
 /**
  * @swagger

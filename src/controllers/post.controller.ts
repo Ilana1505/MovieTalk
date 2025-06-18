@@ -1,6 +1,8 @@
 import PostModel, { iPost } from "../models/Post.model";
 import { Request, Response } from "express";
 import BaseController from "./base.controller";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import mongoose from "mongoose";
 
 class PostController extends BaseController<iPost> {
     constructor() {
@@ -21,12 +23,14 @@ class PostController extends BaseController<iPost> {
             const imagePath = req.file ? `/uploads/posts/${req.file.filename}` : undefined;
 
             
-            const post: iPost = {
+            const post: Partial<iPost> = {
               title: req.body.title,
-             description: req.body.description,
-             review: req.body.review,
-             image: imagePath,
-             sender: user._id
+              description: req.body.description,
+              review: req.body.review,
+              image: imagePath,
+              sender: new mongoose.Types.ObjectId(user._id),
+              likes: [],
+              comments: []
             };
 
             const created = await this.model.create(post);
@@ -44,23 +48,44 @@ async toggleLike(req: Request, res: Response) {
   const userId = (req as any).user._id;
   const postId = req.params.id;
 
-  const post = await this.model.findById(postId);
-  if (!post) return res.status(404).json({ message: "Post not found" });
+  try {
+    const post = await this.model.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
 
-  // Ensure likes is always an array
-  if (!Array.isArray(post.likes)) {
-    post.likes = [];
+    if (!Array.isArray(post.likes)) post.likes = [];
+
+    const alreadyLiked = post.likes.some((id) => id.toString() === userId.toString());
+
+    if (alreadyLiked) {
+      post.likes = post.likes.filter((id) => id.toString() !== userId.toString());
+      await post.save();
+      return res.status(200).json({ message: "Like removed", likes: post.likes.length });
+    } else {
+      post.likes.push(userId);
+      await post.save();
+      return res.status(200).json({ message: "Post liked", likes: post.likes.length });
+    }
+  } catch (error) {
+    console.error("Error toggling like:", error);
+    return res.status(500).json({ message: "Server error", error });
   }
-
-  const alreadyLiked = post.likes.includes(userId);
-  post.likes = alreadyLiked
-    ? post.likes.filter((id: string) => id !== userId)
-    : [...post.likes, userId];
-
-  await post.save();
-  res.status(200).json(post);
 }
 
+
 }
+
+export const getUserPosts = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user._id;
+    const posts = await PostModel.find({
+      sender: new mongoose.Types.ObjectId(userId),
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(posts);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch user posts" });
+  }
+};
+
 
 export default new PostController();

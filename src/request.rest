@@ -3,8 +3,10 @@ POST http://localhost:3000/auth/register
 Content-Type: application/json
 
 {
-  "email": "ilana15@gmail.com",
+  "fullName": "Ilana Barkin",
+  "email": "ilana155@gmail.com",
   "password": "1234"
+  
 }
 
 ### Login a user
@@ -12,7 +14,7 @@ POST http://localhost:3000/auth/login
 Content-Type: application/json
 
 {
-  "email": "ilana15@gmail.com",
+  "email": "ilana155@gmail.com",
   "password": "1234"
 }
 
@@ -21,24 +23,25 @@ POST http://localhost:3000/auth/refresh
 Content-Type: application/json
 
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzhjZjhiNzQ2OTQ2YmYyZjlkZDE2YmEiLCJyYW5kb20iOjkxMTg4OCwiaWF0IjoxNzM3MjkxOTYxLCJleHAiOjE3Mzc4OTY3NjF9.haKweUQPoT9GRBiGda6d_PWoLbpbDoR9bR5isI1uXfk"
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODUyOGZjYmJmYWY2MWU2MWQzZmYxOTEiLCJyYW5kb20iOjcwNzkyMywiaWF0IjoxNzUwMjQxMjQ5LCJleHAiOjE3NTA0MTQwNDl9.8ITgkJaxcyhFlfDKp77U5HPBGTc2ppkE8u10Zsb5vJo"
 }
 
 ### Create a new post with an access token
 POST http://localhost:3000/posts
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODM1YWQxZmFkMjMwYzhiMDc3NGQxZTgiLCJyYW5kb20iOjk1NjM3OCwiaWF0IjoxNzQ4MzUyMzQ0LCJleHAiOjE3NDgzNTI5NDR9.udlRY2YOaFhcs5mhGk_M2AEZT4FvOpygu293ZEmJMtw
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODUyZDQzYmQzOTNlMWY3MGJlM2RhN2QiLCJyYW5kb20iOjY2NDg5NywiaWF0IjoxNzUwMjU5MTEzLCJleHAiOjE3NTAzNDU1MTN9.TL_MTacki1WkQU4lH_WtSqWfQKCnTDyUgFIRalW0ZPc
 
 {
   "title": "My First Post",
-  "content": "This is the content of my first post."
+  "description": "A short description of the post",
+  "review": "This is the full review content of the post"
 }
 
 ### Get all posts
 GET http://localhost:3000/posts
 
 ### Get post by ID
-GET http://localhost:3000/posts/6835bd714050f01eefc8f005
+GET http://localhost:3000/posts/6852d54bc34778ef86fa1c21
 
 ### Get posts by sender
 GET http://localhost:3000/posts?sender=6835bd714050f01eefc8f005

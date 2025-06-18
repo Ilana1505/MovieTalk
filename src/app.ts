@@ -9,6 +9,7 @@ import AuthRoute from "./routes/auth.route";
 import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 import path from "path";
+import userRouter from "./routes/user.route";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads/posts", express.static(path.join(__dirname, "../uploads/posts")));
+app.use("/uploads/profile-pictures", express.static(path.join(__dirname, "../uploads/profile-pictures")));
 
 app.get("/", (req, res) => {
   res.send("🎬 MovieTalk Backend API is running!");
@@ -27,6 +29,7 @@ app.get("/", (req, res) => {
 app.use("/posts", PostRoute);
 app.use("/comments", CommentRoute);
 app.use("/auth", AuthRoute);
+app.use("/users", userRouter);
 
 // ✅ הגדרת Swagger
 const options = {

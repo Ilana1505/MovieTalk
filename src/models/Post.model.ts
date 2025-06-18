@@ -1,25 +1,27 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
-export interface iPost {
-    title: string;
-    description: string;
-    review: string;
-    image?: string; // קישור לתמונה (לא חובה)
-    sender: string;
-    likes?: string[]; // array of userIds
-    comments?: mongoose.Schema.Types.ObjectId[]; // array of comment IDs
+export interface iPost extends Document {
+  title: string;
+  description: string;
+  review: string;
+  image?: string;
+  sender: mongoose.Types.ObjectId;
+  likes: string[]; // userIds
+  comments: mongoose.Types.ObjectId[]; // comment IDs
 }
 
-const PostSchema = new mongoose.Schema({
-  title: { type: String, required: true }, // שם הסרט
-  description: { type: String, required: true }, // תיאור הסרט
-  review: { type: String, required: true }, // הביקורת
-  image: { type: String }, // קישור לתמונה (למשל מ־Cloudinary)
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: "user" }, 
-  likes: { type: [String], default: [] }, // array of userIds
-comments: { type: [mongoose.Schema.Types.ObjectId], ref: "Comment", default: [] }
-}, { timestamps: true });
+const PostSchema = new Schema<iPost>(
+  {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    review: { type: String, required: true },
+    image: { type: String },
+    sender: { type: Schema.Types.ObjectId, ref: "user", required: true },
+    likes: [{ type: Schema.Types.ObjectId, ref: "user", default: [] }],
+    comments: { type: [Schema.Types.ObjectId], ref: "Comment", default: [] },
+  },
+  { timestamps: true }
+);
 
-
-const PostModel = mongoose.model<iPost>('posts', PostSchema);
+const PostModel = mongoose.model<iPost>("posts", PostSchema);
 export default PostModel;

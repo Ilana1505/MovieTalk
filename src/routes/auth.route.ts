@@ -1,5 +1,11 @@
 import express, { Request, Response } from 'express';
 import AuthController from '../controllers/auth.controller';
+import { authMiddleware } from "../middleware/auth.middleware";
+import { updateUserProfile } from "../controllers/user.controller";
+import { getUserProfile } from "../controllers/user.controller"; // כבר הוספת updateUserProfile
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import bcrypt from "bcryptjs";
+import UserModel from "../models/User.model"; // ודא שיש לך מודל משתמש
 
 const router = express.Router();
 
@@ -210,5 +216,63 @@ router.post("/refresh", (req: Request, res: Response, next) => {
 router.post("/login-with-google", (req: Request, res: Response) => {
   AuthController.LoginWithGoogle(req, res);
 });
+
+/**
+ * @swagger
+ * /auth/update-profile:
+ *   put:
+ *     summary: Update user profile (name/email)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put("/update-profile", authMiddleware, (req: Request, res: Response, next) => {
+  updateUserProfile(req, res).catch(next);
+});
+
+router.get("/check", authMiddleware, (req: Request, res: Response, next) => {
+  getUserProfile(req as AuthenticatedRequest, res).catch(next);
+});
+
+router.put("/change-password", authMiddleware, (req: Request, res: Response, next) => {
+  (async () => {
+    try {
+      const { password } = req.body;
+      const userId = (req as any).user._id;
+
+      if (!password || password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await UserModel.findByIdAndUpdate(userId, { password: hashedPassword });
+
+      res.status(200).json({ message: "Password updated successfully" });
+    } catch (err) {
+      console.error("Change password error", err);
+      next(err);
+    }
+  })();
+});
+
+
 
 export default router;

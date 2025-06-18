@@ -5,6 +5,11 @@ type TokenPayload = {
   _id: string;
 };
 
+export interface AuthenticatedRequest extends Request {
+  user: { _id: string };
+}
+
+
 export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];

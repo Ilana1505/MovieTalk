@@ -1,6 +1,7 @@
 import express from 'express';
 import CommentController from '../controllers/comment.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
+import CommentModel from '../models/Comment.model';
 
 const router = express.Router();
 
@@ -257,5 +258,38 @@ router.delete(
 	}
   }
 );
+
+/**
+ * @swagger
+ * /comments/post/{postId}:
+ *   get:
+ *     summary: Get comments for a specific post
+ *     description: Retrieves all comments for the given postId.
+ *     tags: [Comments]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of comments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Comment'
+ */
+router.get("/post/:postId", async (req, res) => {
+  try {
+    const comments = await CommentModel.find({ postId: req.params.postId });
+    res.status(200).json(comments);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch comments" });
+  }
+});
+
 
 export default router;
