@@ -4,7 +4,7 @@ Content-Type: application/json
 
 {
   "fullName": "Ilana Barkin",
-  "email": "ilana155@gmail.com",
+  "email": "ilana100@gmail.com",
   "password": "1234"
   
 }
@@ -14,7 +14,7 @@ POST http://localhost:3000/auth/login
 Content-Type: application/json
 
 {
-  "email": "ilana155@gmail.com",
+  "email": "ilana100@gmail.com",
   "password": "1234"
 }
 
@@ -23,7 +23,7 @@ POST http://localhost:3000/auth/refresh
 Content-Type: application/json
 
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODUyOGZjYmJmYWY2MWU2MWQzZmYxOTEiLCJyYW5kb20iOjcwNzkyMywiaWF0IjoxNzUwMjQxMjQ5LCJleHAiOjE3NTA0MTQwNDl9.8ITgkJaxcyhFlfDKp77U5HPBGTc2ppkE8u10Zsb5vJo"
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OGQxNTg3NzJkY2M5OTY1ZTZhNzdjODciLCJyYW5kb20iOjE2MjU1MSwiaWF0IjoxNzU4NTUwMTUxLCJleHAiOjE3NTg3MjI5NTF9.QGQDNFUqi3m3qHmSCMNGWlhKPmzliqr_bDRXTjLEM2s"
 }
 
 ### Create a new post with an access token
