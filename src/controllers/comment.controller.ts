@@ -1,5 +1,5 @@
-import CommentModel,{ iComment } from "../models/Comment.model";
-import UserModel from "../models/User.model";        
+import CommentModel, { iComment } from "../models/Comment.model";
+import UserModel from "../models/User.model";
 import { Request, Response } from "express";
 import BaseController from "./base.controller";
 
@@ -8,7 +8,7 @@ class CommentController extends BaseController<iComment> {
     super(CommentModel);
   }
 
-  async CreateItem(req: Request, res: Response) {
+  async CreateItem(req: Request, res: Response): Promise<void> {
     try {
       const u = (req as any).user || {};
       const userId = u._id || u.id;
@@ -17,14 +17,24 @@ class CommentController extends BaseController<iComment> {
         return;
       }
 
-      let senderName =
-        u.fullName ||
-        (await UserModel.findById(userId).select("fullName").lean())?.fullName ||
-        "Anonymous";
+      const fromDb =
+        !u.fullName || !u.profilePicture
+          ? await UserModel.findById(userId)
+              .select("fullName profilePicture")
+              .lean()
+          : null;
+
+      const senderName =
+        u.fullName || fromDb?.fullName || "Anonymous";
+
+      const senderAvatar =
+        u.profilePicture || fromDb?.profilePicture || undefined;
 
       req.body = {
         ...req.body,
-        sender: senderName,
+        sender: senderName,          
+        senderAvatar,                 
+        senderId: String(userId),     
       };
 
       await super.CreateItem(req, res);
