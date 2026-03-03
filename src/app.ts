@@ -10,6 +10,7 @@ import swaggerJsDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 import path from "path";
 import userRouter from "./routes/user.route";
+import aiRoute from "./routes/ai.route";
 
 const app = express();
 
@@ -30,8 +31,9 @@ app.use("/posts", PostRoute);
 app.use("/comments", CommentRoute);
 app.use("/auth", AuthRoute);
 app.use("/users", userRouter);
+app.use("/ai", aiRoute);
 
-// ✅ הגדרת Swagger
+//  הגדרת Swagger
 const options = {
   definition: {
     openapi: "3.0.0",

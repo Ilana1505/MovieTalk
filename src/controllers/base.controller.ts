@@ -32,8 +32,10 @@ class BaseController<T> {
                 filter.postId = postId;
             }
 
-            const data = await this.model.find(Object.keys(filter).length > 0 ? filter : {});
-
+ const data = await this.model
+        .find(Object.keys(filter).length > 0 ? filter : {})
+        .sort({ createdAt: -1 });
+        
             if (data.length === 0) {
                 res.status(200).send([]);
                 return;
