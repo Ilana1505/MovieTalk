@@ -4,7 +4,7 @@ import UserModel from "../models/User.model";
 
 export const getUserProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user = await UserModel.findById(req.user._id).select("-password -refreshToken"); // אל תשלחי סיסמה
+    const user = await UserModel.findById(req.user._id).select("-password -refreshTokens"); 
     if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json(user);
   } catch (error) {

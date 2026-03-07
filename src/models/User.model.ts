@@ -6,6 +6,7 @@ export interface iUser {
   _id?: string; 
   fullName?: string;
   profilePicture?: string;
+  googleId?: string;
   refreshTokens?: string[]; 
 }
 
@@ -14,6 +15,7 @@ const UserSchema = new mongoose.Schema<iUser>({
   password: { type: String, required: true },
   fullName: { type: String, default: "" },
   profilePicture: { type: String, default: "" },
+  googleId: { type: String, default: "" },
   refreshTokens: { type: [String], default: [] }
 });
 

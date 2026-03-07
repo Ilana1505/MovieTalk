@@ -2,10 +2,10 @@ import express, { Request, Response } from 'express';
 import AuthController from '../controllers/auth.controller';
 import { authMiddleware } from "../middleware/auth.middleware";
 import { updateUserProfile } from "../controllers/user.controller";
-import { getUserProfile } from "../controllers/user.controller"; // כבר הוספת updateUserProfile
+import { getUserProfile } from "../controllers/user.controller"; 
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
 import bcrypt from "bcryptjs";
-import UserModel from "../models/User.model"; // ודא שיש לך מודל משתמש
+import UserModel from "../models/User.model"; 
 
 const router = express.Router();
 
