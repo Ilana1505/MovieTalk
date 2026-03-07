@@ -110,9 +110,6 @@ export const generateDescription = async (
   }
 };
 
-// ----------------------------------------------------
-// 2) Smart search (AI) - freeSearchPosts
-// ----------------------------------------------------
 export const freeSearchPosts = async (
   req: Request,
   res: Response
@@ -134,7 +131,7 @@ export const freeSearchPosts = async (
 
     const q = query.trim();
 
-    // 1) חיפוש "זול" קודם (חוסך שימוש ב-AI)
+    // 1) חיפוש רגיל
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const cheapRx = new RegExp(escaped, "i");
 
@@ -146,37 +143,32 @@ export const freeSearchPosts = async (
       ],
     }).sort({ _id: -1 });
 
-    if (cheapResults.length > 0) {
-      res.json({ results: cheapResults, ai: { mode: "cheap-regex" } });
-      return;
-    }
-
-    // 2) אם לא מצאנו בזול — Semantic search עם AI:
+    // 2) חיפוש חכם עם AI
+    // ניקח יותר מועמדים כדי שה-AI יראה יותר פוסטים, לא רק 50
     const candidates = await PostModel.find({})
       .sort({ _id: -1 })
-      .limit(50)
+      .limit(150)
       .select("_id title description review");
 
-    if (candidates.length === 0) {
-      res.json({ results: [], ai: { mode: "semantic", pickedIds: [] } });
-      return;
-    }
+    let semanticOrdered: any[] = [];
+    let pickedIds: string[] = [];
 
-    const items = candidates.map((p) => ({
-      id: String(p._id),
-      title: (p.title || "").slice(0, 120),
-      description: (p.description || "").slice(0, 220),
-      review: (p.review || "").slice(0, 220),
-    }));
+    if (candidates.length > 0) {
+      const items = candidates.map((p) => ({
+        id: String(p._id),
+        title: (p.title || "").slice(0, 120),
+        description: (p.description || "").slice(0, 220),
+        review: (p.review || "").slice(0, 220),
+      }));
 
-    // חשוב: מחזירים JSON בלבד + בלי markdown
-    const prompt = `
+      const prompt = `
 Return ONLY valid JSON. No markdown. No code fences. No extra text.
 Schema: {"ids":["..."],"reason":"..."}
 
 Rules:
 - Pick up to 10 post ids that best match the query.
-- Use semantic understanding (synonyms/related meaning).
+- Use semantic understanding (synonyms, related concepts, themes, genres, characters, settings).
+- Include posts that are related by meaning even if the exact query word does not appear.
 - If nothing matches, return {"ids":[],"reason":"no match"}.
 
 User query: ${q}
@@ -185,54 +177,69 @@ Posts:
 ${JSON.stringify(items)}
 `.trim();
 
-    const callGemini = async () => {
-      return ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
-        contents: prompt,
-      });
-    };
+      const callGemini = async () => {
+        return ai.models.generateContent({
+          model: "gemini-2.5-flash-lite",
+          contents: prompt,
+        });
+      };
 
-    let aiResp;
-    try {
-      aiResp = await callGemini();
-    } catch (err: any) {
-      if (isGeminiBusy(err)) {
-        await sleep(700);
+      let aiResp;
+      try {
         aiResp = await callGemini();
-      } else {
-        throw err;
+      } catch (err: any) {
+        if (isGeminiBusy(err)) {
+          await sleep(700);
+          aiResp = await callGemini();
+        } else {
+          throw err;
+        }
+      }
+
+      const raw = (aiResp.text || "").trim();
+      console.log("AI semantic raw response:", raw);
+
+      const cleaned = cleanGeminiJson(raw);
+
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (Array.isArray(parsed.ids)) {
+          pickedIds = parsed.ids.map((x: any) => String(x));
+        }
+      } catch {
+        pickedIds = [];
+      }
+
+      pickedIds = pickedIds.filter(Boolean).slice(0, 10);
+
+      if (pickedIds.length > 0) {
+        const docs = await PostModel.find({ _id: { $in: pickedIds } });
+        const docMap = new Map(docs.map((d) => [String(d._id), d]));
+        semanticOrdered = pickedIds
+          .map((id) => docMap.get(id))
+          .filter(Boolean);
       }
     }
 
-    const raw = (aiResp.text || "").trim();
-    console.log("AI semantic raw response:", raw);
+    // 3) מיזוג תוצאות: קודם רגיל, אחר כך חכם, בלי כפילויות
+    const merged = [...cheapResults, ...semanticOrdered];
+    const seen = new Set<string>();
 
-    const cleaned = cleanGeminiJson(raw);
+    const uniqueResults = merged.filter((post: any) => {
+      const id = String(post._id);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
 
-    let pickedIds: string[] = [];
-    try {
-      const parsed = JSON.parse(cleaned);
-      if (Array.isArray(parsed.ids)) {
-        pickedIds = parsed.ids.map((x: any) => String(x));
-      }
-    } catch {
-      pickedIds = [];
-    }
-
-    pickedIds = pickedIds.filter(Boolean).slice(0, 10);
-    console.log("AI semantic picked ids:", pickedIds);
-
-    if (pickedIds.length === 0) {
-      res.json({ results: [], ai: { mode: "semantic", pickedIds: [] } });
-      return;
-    }
-
-    // שליפה לפי הסדר שה-AI החזיר
-    const docs = await PostModel.find({ _id: { $in: pickedIds } });
-    const docMap = new Map(docs.map((d) => [String(d._id), d]));
-    const ordered = pickedIds.map((id) => docMap.get(id)).filter(Boolean);
-
-    res.json({ results: ordered, ai: { mode: "semantic", pickedIds } });
+    res.json({
+      results: uniqueResults,
+      ai: {
+        mode: "combined",
+        regexCount: cheapResults.length,
+        pickedIds,
+      },
+    });
   } catch (err: any) {
     const status = err?.status || err?.response?.status;
     const message = err?.message || err?.response?.data?.error?.message;
