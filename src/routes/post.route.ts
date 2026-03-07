@@ -1,9 +1,9 @@
-import express from 'express';
-import PostController from '../controllers/post.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import express from "express";
+import PostController from "../controllers/post.controller";
+import { authMiddleware } from "../middleware/auth.middleware";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { getUserPosts } from "../controllers/post.controller";
 
 const router = express.Router();
@@ -22,8 +22,9 @@ const storage = multer.diskStorage({
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, `post-${uniqueSuffix}${ext}`);
-  }
+  },
 });
+
 const upload = multer({ storage });
 
 /**
@@ -103,7 +104,12 @@ const upload = multer({ storage });
  *       400:
  *         description: Bad request
  */
-router.post('/', authMiddleware, upload.single('image'), PostController.CreateItem.bind(PostController));
+router.post(
+  "/",
+  authMiddleware,
+  upload.single("image"),
+  PostController.CreateItem.bind(PostController)
+);
 
 /**
  * @swagger
@@ -131,8 +137,7 @@ router.post('/', authMiddleware, upload.single('image'), PostController.CreateIt
  *       400:
  *         description: Invalid query parameters
  */
-router.get('/', PostController.GetAll.bind(PostController));
-
+router.get("/", PostController.GetAll.bind(PostController));
 
 router.get("/my-posts", authMiddleware, (req, res) => {
   return getUserPosts(req as any, res);
@@ -164,7 +169,7 @@ router.get("/my-posts", authMiddleware, (req, res) => {
  *       400:
  *         description: Invalid ID format
  */
-router.get('/:id', (req, res) => {
+router.get("/:id", (req, res) => {
   PostController.GetById(req, res);
 });
 
@@ -173,9 +178,9 @@ router.get('/:id', (req, res) => {
  * /posts/{id}:
  *   put:
  *     summary: Update a post by ID
- *     description: Updates the content of an existing post.
+ *     description: Updates the content of an existing post only if it belongs to the logged-in user.
  *     security:
- *       - bearerAuth: []  
+ *       - bearerAuth: []
  *     tags: [Posts]
  *     parameters:
  *       - in: path
@@ -193,28 +198,27 @@ router.get('/:id', (req, res) => {
  *             properties:
  *               title:
  *                 type: string
- *                 description: The updated title of the post
- *               content:
+ *               description:
  *                 type: string
- *                 description: The updated content of the post
+ *               review:
+ *                 type: string
  *             required:
  *               - title
- *               - content
+ *               - description
+ *               - review
  *     responses:
  *       200:
  *         description: The updated post
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Post'
+ *       403:
+ *         description: You can edit only your own posts
  *       404:
  *         description: Post not found
  *       400:
  *         description: Invalid input
  */
-router.put('/:id', authMiddleware, async (req, res, next) => {
+router.put("/:id", authMiddleware, async (req, res, next) => {
   try {
-    await PostController.UpdateItem(req, res);
+    await PostController.updateOwnPost(req as any, res);
   } catch (err) {
     next(err);
   }
@@ -225,9 +229,9 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
  * /posts/{id}:
  *   delete:
  *     summary: Delete a post by ID
- *     description: Deletes a post from the system by its unique ID.
+ *     description: Deletes a post only if it belongs to the logged-in user.
  *     security:
- *       - bearerAuth: []  
+ *       - bearerAuth: []
  *     tags: [Posts]
  *     parameters:
  *       - in: path
@@ -239,12 +243,14 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
  *     responses:
  *       200:
  *         description: Successfully deleted the post
+ *       403:
+ *         description: You can delete only your own posts
  *       404:
  *         description: Post not found
  */
-router.delete('/:id', authMiddleware, async (req, res, next) => {
+router.delete("/:id", authMiddleware, async (req, res, next) => {
   try {
-    await PostController.DeleteItem(req, res);
+    await PostController.deleteOwnPost(req as any, res);
   } catch (err) {
     next(err);
   }
@@ -293,6 +299,5 @@ router.post("/:id/like", authMiddleware, async (req, res, next) => {
     next(err);
   }
 });
-
 
 export default router;

@@ -5,87 +5,161 @@ import { AuthenticatedRequest } from "../middleware/auth.middleware";
 import mongoose from "mongoose";
 
 class PostController extends BaseController<iPost> {
-    constructor() {
-        super(PostModel);
+  constructor() {
+    super(PostModel);
+  }
+
+  async CreateItem(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+
+      if (!user || !user._id) {
+        res.status(403).json({ message: "Unauthorized: missing user ID" });
+        return;
+      }
+
+      console.log("USER FROM TOKEN:", user);
+
+      const imagePath = req.file ? `/uploads/posts/${req.file.filename}` : undefined;
+
+      const post: Partial<iPost> = {
+        title: req.body.title,
+        description: req.body.description,
+        review: req.body.review,
+        image: imagePath,
+        sender: new mongoose.Types.ObjectId(user._id),
+        likes: [],
+        comments: [],
+      };
+
+      const created = await this.model.create(post);
+      res.status(201).send(created);
+      return;
+    } catch (error) {
+      console.error("Failed to create post:", error);
+      res.status(400).json({ message: "Failed to create post", error });
+      return;
     }
+  }
 
-    async CreateItem(req: Request, res: Response) {
-        try {
-            const user = (req as any).user;
+  async toggleLike(req: Request, res: Response) {
+    const userId = (req as any).user._id;
+    const postId = req.params.id;
 
-            if (!user || !user._id) {
-                res.status(403).json({ message: "Unauthorized: missing user ID" });
-                return;
-            }
+    try {
+      const post = await this.model.findById(postId);
+      if (!post) return res.status(404).json({ message: "Post not found" });
 
-            console.log("USER FROM TOKEN:", user);
+      if (!Array.isArray(post.likes)) post.likes = [];
 
-            const imagePath = req.file ? `/uploads/posts/${req.file.filename}` : undefined;
+      const alreadyLiked = post.likes.some(
+        (id) => id.toString() === userId.toString()
+      );
 
-            
-            const post: Partial<iPost> = {
-              title: req.body.title,
-              description: req.body.description,
-              review: req.body.review,
-              image: imagePath,
-              sender: new mongoose.Types.ObjectId(user._id),
-              likes: [],
-              comments: []
-            };
-
-            const created = await this.model.create(post);
-            res.status(201).send(created);
-            return;
-        } catch (error) {
-            console.error("Failed to create post:", error);
-            res.status(400).json({ message: "Failed to create post", error });
-            return;
-        }
+      if (alreadyLiked) {
+        post.likes = post.likes.filter(
+          (id) => id.toString() !== userId.toString()
+        );
+        await post.save();
+        return res
+          .status(200)
+          .json({ message: "Like removed", likes: post.likes.length });
+      } else {
+        post.likes.push(userId);
+        await post.save();
+        return res
+          .status(200)
+          .json({ message: "Post liked", likes: post.likes.length });
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      return res.status(500).json({ message: "Server error", error });
     }
+  }
 
-    // הוספת לייק
-async toggleLike(req: Request, res: Response) {
-  const userId = (req as any).user._id;
-  const postId = req.params.id;
+  async updateOwnPost(req: AuthenticatedRequest, res: Response) {
+    try {
+      const postId = req.params.id;
+      const userId = req.user._id;
 
-  try {
-    const post = await this.model.findById(postId);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+      if (!mongoose.Types.ObjectId.isValid(postId)) {
+        return res.status(400).json({ message: "Invalid post id" });
+      }
 
-    if (!Array.isArray(post.likes)) post.likes = [];
+      const post = await this.model.findById(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
 
-    const alreadyLiked = post.likes.some((id) => id.toString() === userId.toString());
+      if (post.sender.toString() !== userId.toString()) {
+        return res
+          .status(403)
+          .json({ message: "You can edit only your own posts" });
+      }
 
-    if (alreadyLiked) {
-      post.likes = post.likes.filter((id) => id.toString() !== userId.toString());
-      await post.save();
-      return res.status(200).json({ message: "Like removed", likes: post.likes.length });
-    } else {
-      post.likes.push(userId);
-      await post.save();
-      return res.status(200).json({ message: "Post liked", likes: post.likes.length });
+      const updated = await this.model.findByIdAndUpdate(
+        postId,
+        {
+          title: req.body.title,
+          description: req.body.description,
+          review: req.body.review,
+        },
+        { new: true, runValidators: true }
+      );
+
+      return res.status(200).json(updated);
+    } catch (error) {
+      console.error("Failed to update post:", error);
+      return res.status(500).json({ message: "Failed to update post" });
     }
-  } catch (error) {
-    console.error("Error toggling like:", error);
-    return res.status(500).json({ message: "Server error", error });
+  }
+
+  async deleteOwnPost(req: AuthenticatedRequest, res: Response) {
+    try {
+      const postId = req.params.id;
+      const userId = req.user._id;
+
+      if (!mongoose.Types.ObjectId.isValid(postId)) {
+        return res.status(400).json({ message: "Invalid post id" });
+      }
+
+      const post = await this.model.findById(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      if (post.sender.toString() !== userId.toString()) {
+        return res
+          .status(403)
+          .json({ message: "You can delete only your own posts" });
+      }
+
+      await this.model.findByIdAndDelete(postId);
+
+      return res.status(200).json({ message: "Post deleted successfully" });
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      return res.status(500).json({ message: "Failed to delete post" });
+    }
   }
 }
 
-
-}
-
-export const getUserPosts = async (req: AuthenticatedRequest, res: Response) => {
+export const getUserPosts = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const userId = req.user._id;
+
     const posts = await PostModel.find({
       sender: new mongoose.Types.ObjectId(userId),
     }).sort({ createdAt: -1 });
 
     res.status(200).json(posts);
   } catch (err) {
+    console.error("Failed to fetch user posts:", err);
     res.status(500).json({ error: "Failed to fetch user posts" });
   }
 };
-
 
 export default new PostController();
