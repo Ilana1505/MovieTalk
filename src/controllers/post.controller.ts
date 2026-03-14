@@ -78,41 +78,56 @@ class PostController extends BaseController<iPost> {
   }
 
   async updateOwnPost(req: AuthenticatedRequest, res: Response) {
-    try {
-      const postId = req.params.id;
-      const userId = req.user._id;
+  try {
+    const postId = req.params.id;
+    const userId = req.user._id;
 
-      if (!mongoose.Types.ObjectId.isValid(postId)) {
-        return res.status(400).json({ message: "Invalid post id" });
-      }
-
-      const post = await this.model.findById(postId);
-      if (!post) {
-        return res.status(404).json({ message: "Post not found" });
-      }
-
-      if (post.sender.toString() !== userId.toString()) {
-        return res
-          .status(403)
-          .json({ message: "You can edit only your own posts" });
-      }
-
-      const updated = await this.model.findByIdAndUpdate(
-        postId,
-        {
-          title: req.body.title,
-          description: req.body.description,
-          review: req.body.review,
-        },
-        { new: true, runValidators: true }
-      );
-
-      return res.status(200).json(updated);
-    } catch (error) {
-      console.error("Failed to update post:", error);
-      return res.status(500).json({ message: "Failed to update post" });
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ message: "Invalid post id" });
     }
+
+    const post = await this.model.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (post.sender.toString() !== userId.toString()) {
+      return res
+        .status(403)
+        .json({ message: "You can edit only your own posts" });
+    }
+
+    const removeImage = req.body.removeImage === "true";
+    const newImagePath = req.file ? `/uploads/posts/${req.file.filename}` : null;
+
+    if (req.body.title !== undefined) {
+      post.title = req.body.title;
+    }
+
+    if (req.body.description !== undefined) {
+      post.description = req.body.description;
+    }
+
+    if (req.body.review !== undefined) {
+      post.review = req.body.review;
+    }
+
+    if (removeImage) {
+      post.image = "";
+    }
+
+    if (newImagePath) {
+      post.image = newImagePath;
+    }
+
+    await post.save();
+
+    return res.status(200).json(post);
+  } catch (error) {
+    console.error("Failed to update post:", error);
+    return res.status(500).json({ message: "Failed to update post" });
   }
+}
 
   async deleteOwnPost(req: AuthenticatedRequest, res: Response) {
     try {

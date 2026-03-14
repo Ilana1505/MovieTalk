@@ -216,7 +216,7 @@ router.get("/:id", (req, res) => {
  *       400:
  *         description: Invalid input
  */
-router.put("/:id", authMiddleware, async (req, res, next) => {
+router.put("/:id", authMiddleware, upload.single("image"), async (req, res, next) => {
   try {
     await PostController.updateOwnPost(req as any, res);
   } catch (err) {
