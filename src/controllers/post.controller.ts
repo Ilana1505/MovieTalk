@@ -9,6 +9,37 @@ class PostController extends BaseController<iPost> {
     super(PostModel);
   }
 
+  async GetAll(req: Request, res: Response) {
+    try {
+      const sender = req.query.sender;
+      const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+      const limit = Math.max(parseInt(req.query.limit as string) || 5, 1);
+      const skip = (page - 1) * limit;
+
+      const filter: Record<string, any> = {};
+
+      if (typeof sender === "string" && sender.trim()) {
+        filter.sender = sender;
+      }
+
+      const [posts, total] = await Promise.all([
+        this.model.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        this.model.countDocuments(filter),
+      ]);
+
+      res.status(200).json({
+        posts,
+        page,
+        limit,
+        total,
+        hasMore: skip + posts.length < total,
+      });
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+      res.status(400).json({ message: "Failed to fetch posts", error });
+    }
+  }
+
   async CreateItem(req: Request, res: Response) {
     try {
       const user = (req as any).user;
@@ -78,56 +109,56 @@ class PostController extends BaseController<iPost> {
   }
 
   async updateOwnPost(req: AuthenticatedRequest, res: Response) {
-  try {
-    const postId = req.params.id;
-    const userId = req.user._id;
+    try {
+      const postId = req.params.id;
+      const userId = req.user._id;
 
-    if (!mongoose.Types.ObjectId.isValid(postId)) {
-      return res.status(400).json({ message: "Invalid post id" });
+      if (!mongoose.Types.ObjectId.isValid(postId)) {
+        return res.status(400).json({ message: "Invalid post id" });
+      }
+
+      const post = await this.model.findById(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      if (post.sender.toString() !== userId.toString()) {
+        return res
+          .status(403)
+          .json({ message: "You can edit only your own posts" });
+      }
+
+      const removeImage = req.body.removeImage === "true";
+      const newImagePath = req.file ? `/uploads/posts/${req.file.filename}` : null;
+
+      if (req.body.title !== undefined) {
+        post.title = req.body.title;
+      }
+
+      if (req.body.description !== undefined) {
+        post.description = req.body.description;
+      }
+
+      if (req.body.review !== undefined) {
+        post.review = req.body.review;
+      }
+
+      if (removeImage) {
+        post.image = "";
+      }
+
+      if (newImagePath) {
+        post.image = newImagePath;
+      }
+
+      await post.save();
+
+      return res.status(200).json(post);
+    } catch (error) {
+      console.error("Failed to update post:", error);
+      return res.status(500).json({ message: "Failed to update post" });
     }
-
-    const post = await this.model.findById(postId);
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-
-    if (post.sender.toString() !== userId.toString()) {
-      return res
-        .status(403)
-        .json({ message: "You can edit only your own posts" });
-    }
-
-    const removeImage = req.body.removeImage === "true";
-    const newImagePath = req.file ? `/uploads/posts/${req.file.filename}` : null;
-
-    if (req.body.title !== undefined) {
-      post.title = req.body.title;
-    }
-
-    if (req.body.description !== undefined) {
-      post.description = req.body.description;
-    }
-
-    if (req.body.review !== undefined) {
-      post.review = req.body.review;
-    }
-
-    if (removeImage) {
-      post.image = "";
-    }
-
-    if (newImagePath) {
-      post.image = newImagePath;
-    }
-
-    await post.save();
-
-    return res.status(200).json(post);
-  } catch (error) {
-    console.error("Failed to update post:", error);
-    return res.status(500).json({ message: "Failed to update post" });
   }
-}
 
   async deleteOwnPost(req: AuthenticatedRequest, res: Response) {
     try {

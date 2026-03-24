@@ -13,7 +13,6 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Setup multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -43,21 +42,55 @@ const upload = multer({ storage });
  *       properties:
  *         _id:
  *           type: string
- *           description: The unique identifier of the post
  *         title:
  *           type: string
- *           description: The title of the post
- *         content:
+ *         description:
  *           type: string
- *           description: The content of the post
+ *         review:
+ *           type: string
+ *         image:
+ *           type: string
  *         sender:
  *           type: string
- *           description: The sender's identifier
+ *         likes:
+ *           type: array
+ *           items:
+ *             type: string
  *       example:
  *         _id: "987654321987654321987654"
- *         title: "Test Post"
- *         content: "This is a test post content"
- *         sender: "DANA"
+ *         title: "Inception"
+ *         description: "A sci-fi thriller about dream invasion"
+ *         review: "Amazing movie with a brilliant concept"
+ *         image: "/uploads/posts/post-123.jpg"
+ *         sender: "987654321987654321987650"
+ *         likes: []
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     PaginatedPostsResponse:
+ *       type: object
+ *       properties:
+ *         posts:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Post'
+ *         page:
+ *           type: integer
+ *         limit:
+ *           type: integer
+ *         total:
+ *           type: integer
+ *         hasMore:
+ *           type: boolean
+ *       example:
+ *         posts: []
+ *         page: 1
+ *         limit: 5
+ *         total: 12
+ *         hasMore: true
  */
 
 /**
@@ -115,8 +148,8 @@ router.post(
  * @swagger
  * /posts:
  *   get:
- *     summary: Get all posts
- *     description: Get a list of all posts. Optionally, filter by sender.
+ *     summary: Get posts with paging
+ *     description: Get posts in a paginated way. Supports optional sender filter.
  *     tags: [Posts]
  *     parameters:
  *       - in: query
@@ -125,19 +158,33 @@ router.post(
  *         schema:
  *           type: string
  *         description: Filter posts by sender
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           example: 5
+ *         description: Number of posts per page
  *     responses:
  *       200:
- *         description: A list of posts matching the filter (if provided)
+ *         description: Paginated posts response
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Post'
+ *               $ref: '#/components/schemas/PaginatedPostsResponse'
  *       400:
  *         description: Invalid query parameters
  */
-router.get("/", PostController.GetAll.bind(PostController));
+router.get("/", async (req, res) => {
+  await PostController.GetAll(req, res);
+});
 
 router.get("/my-posts", authMiddleware, (req, res) => {
   return getUserPosts(req as any, res);
@@ -192,7 +239,7 @@ router.get("/:id", (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -202,10 +249,12 @@ router.get("/:id", (req, res) => {
  *                 type: string
  *               review:
  *                 type: string
- *             required:
- *               - title
- *               - description
- *               - review
+ *               removeImage:
+ *                 type: string
+ *                 example: "true"
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: The updated post
@@ -216,12 +265,8 @@ router.get("/:id", (req, res) => {
  *       400:
  *         description: Invalid input
  */
-router.put("/:id", authMiddleware, upload.single("image"), async (req, res, next) => {
-  try {
-    await PostController.updateOwnPost(req as any, res);
-  } catch (err) {
-    next(err);
-  }
+router.put("/:id", authMiddleware, upload.single("image"), async (req, res) => {
+  await PostController.updateOwnPost(req as any, res);
 });
 
 /**
@@ -237,23 +282,19 @@ router.put("/:id", authMiddleware, upload.single("image"), async (req, res, next
  *       - in: path
  *         name: id
  *         required: true
- *         description: The ID of the post to delete.
+ *         description: The ID of the post to delete
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: Successfully deleted the post
+ *         description: Post deleted successfully
  *       403:
  *         description: You can delete only your own posts
  *       404:
  *         description: Post not found
  */
-router.delete("/:id", authMiddleware, async (req, res, next) => {
-  try {
-    await PostController.deleteOwnPost(req as any, res);
-  } catch (err) {
-    next(err);
-  }
+router.delete("/:id", authMiddleware, async (req, res) => {
+  await PostController.deleteOwnPost(req as any, res);
 });
 
 /**
@@ -261,7 +302,7 @@ router.delete("/:id", authMiddleware, async (req, res, next) => {
  * /posts/{id}/like:
  *   post:
  *     summary: Toggle like on a post
- *     description: Adds a like to the post if not already liked, or removes it if already liked.
+ *     description: Adds or removes a like from the logged-in user on a post.
  *     security:
  *       - bearerAuth: []
  *     tags: [Posts]
@@ -269,35 +310,17 @@ router.delete("/:id", authMiddleware, async (req, res, next) => {
  *       - in: path
  *         name: id
  *         required: true
- *         description: The ID of the post to like/unlike
+ *         description: The ID of the post
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: Successfully toggled like
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 likes:
- *                   type: integer
- *               example:
- *                 message: "Post liked"
- *                 likes: 5
+ *         description: Like toggled successfully
  *       404:
  *         description: Post not found
- *       401:
- *         description: Unauthorized
  */
-router.post("/:id/like", authMiddleware, async (req, res, next) => {
-  try {
-    await PostController.toggleLike(req, res);
-  } catch (err) {
-    next(err);
-  }
+router.post("/:id/like", authMiddleware, (req, res) => {
+  PostController.toggleLike(req, res);
 });
 
 export default router;
