@@ -8,7 +8,7 @@ export const getUserProfile = async (req: AuthenticatedRequest, res: Response) =
     if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json(user);
   } catch (error) {
-    console.error("❌ Failed to fetch user profile:", error);
+    console.error(" Failed to fetch user profile:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -29,7 +29,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 
     res.status(200).json(updated);
   } catch (error) {
-    console.error("❌ Failed to update user profile:", error);
+    console.error(" Failed to update user profile:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

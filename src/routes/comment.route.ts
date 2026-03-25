@@ -1,7 +1,7 @@
-import express from 'express';
-import CommentController from '../controllers/comment.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
-import CommentModel from '../models/Comment.model';
+import express from "express";
+import CommentController from "../controllers/comment.controller";
+import { authMiddleware } from "../middleware/auth.middleware";
+import CommentModel from "../models/Comment.model";
 
 const router = express.Router();
 
@@ -9,7 +9,7 @@ const router = express.Router();
  * @swagger
  * tags:
  *   name: Comments
- *   description: The Comments API
+ *   description: Comments API
  */
 
 /**
@@ -21,21 +21,54 @@ const router = express.Router();
  *       properties:
  *         _id:
  *           type: string
- *           description: The unique identifier of the comment
+ *           example: "67d123abc456def789000111"
  *         comment:
  *           type: string
- *           description: The text of the comment
+ *           example: "Amazing movie!"
  *         postId:
  *           type: string
- *           description: The ID of the post the comment belongs to
+ *           example: "67d123abc456def789000222"
  *         sender:
  *           type: string
- *           description: The sender's identifier
- *       example:
- *         _id: "123456789123456789123456"
- *         comment: "This is a test comment on the post"
- *         postId: "987654321987654321987654"
- *         sender: "DANA123"
+ *           example: "Ilana Barkin"
+ *         senderAvatar:
+ *           type: string
+ *           example: "/uploads/profile-pictures/profile-123.jpg"
+ *         senderId:
+ *           type: string
+ *           example: "67d123abc456def789000333"
+ *         createdAt:
+ *           type: string
+ *           example: "2026-03-24T12:30:00.000Z"
+ *
+ *     CreateCommentRequest:
+ *       type: object
+ *       required:
+ *         - comment
+ *         - postId
+ *       properties:
+ *         comment:
+ *           type: string
+ *           example: "This review made me want to watch it"
+ *         postId:
+ *           type: string
+ *           example: "67d123abc456def789000222"
+ *
+ *     UpdateCommentRequest:
+ *       type: object
+ *       required:
+ *         - comment
+ *       properties:
+ *         comment:
+ *           type: string
+ *           example: "Updated comment text"
+ *
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: "Failed to fetch comments"
  */
 
 /**
@@ -52,40 +85,39 @@ const router = express.Router();
  * @swagger
  * /comments:
  *   post:
- *     summary: Creates a new comment
- *     description: Creates a new comment for a post.
+ *     summary: Create a new comment
+ *     description: Creates a new comment on a post by the logged-in user.
  *     security:
- *       - bearerAuth: []  
+ *       - bearerAuth: []
  *     tags: [Comments]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               comment:
- *                 type: string
- *               postId:
- *                 type: string
+ *             $ref: '#/components/schemas/CreateCommentRequest'
  *     responses:
  *       201:
- *         description: The created comment
+ *         description: Comment created successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Comment'
  *       400:
- *         description: Missing or incorrect input
+ *         description: Missing or invalid input
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Failed to add comment
  */
-router.post('/', authMiddleware, CommentController.CreateItem.bind(CommentController));
+router.post("/", authMiddleware, CommentController.CreateItem.bind(CommentController));
 
 /**
  * @swagger
  * /comments:
  *   get:
  *     summary: Get all comments
- *     description: Get a list of all comments. Optionally, filter by sender.
+ *     description: Returns all comments. Can optionally be filtered by sender.
  *     tags: [Comments]
  *     parameters:
  *       - in: query
@@ -93,10 +125,10 @@ router.post('/', authMiddleware, CommentController.CreateItem.bind(CommentContro
  *         required: false
  *         schema:
  *           type: string
- *         description: Filter comments by sender
+ *         description: Filter comments by sender name
  *     responses:
  *       200:
- *         description: A list of comments matching the filter (if provided)
+ *         description: List of comments
  *         content:
  *           application/json:
  *             schema:
@@ -106,53 +138,64 @@ router.post('/', authMiddleware, CommentController.CreateItem.bind(CommentContro
  *       400:
  *         description: Invalid query parameters
  */
-router.get('/', CommentController.GetAll.bind(CommentController));
+router.get("/", CommentController.GetAll.bind(CommentController));
 
 /**
  * @swagger
- * /comments/posts/{postId}:
+ * /comments/post/{postId}:
  *   get:
- *     summary: Get all comments for a specific post
- *     description: Get a list of all comments associated with a specific post identified by its postId.
+ *     summary: Get comments for a specific post
+ *     description: Retrieves all comments associated with a specific post.
  *     tags: [Comments]
  *     parameters:
  *       - in: path
  *         name: postId
  *         required: true
- *         description: The ID of the post for which comments are to be retrieved
+ *         description: The ID of the post
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: A list of comments for the specified post
+ *         description: List of comments for the given post
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Comment'
- *       400:
- *         description: Invalid postId format
+ *       500:
+ *         description: Failed to fetch comments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/posts/:postId', CommentController.GetAll.bind(CommentController));
+router.get("/post/:postId", async (req, res) => {
+  try {
+    const comments = await CommentModel.find({ postId: req.params.postId });
+    res.status(200).json(comments);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch comments" });
+  }
+});
 
 /**
  * @swagger
  * /comments/{id}:
  *   get:
  *     summary: Get a comment by ID
- *     description: Get a specific comment by its unique ID.
+ *     description: Retrieves a specific comment by its unique ID.
  *     tags: [Comments]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         description: The ID of the comment to retrieve
+ *         description: The ID of the comment
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: The comment data
+ *         description: Comment found
  *         content:
  *           application/json:
  *             schema:
@@ -162,25 +205,22 @@ router.get('/posts/:postId', CommentController.GetAll.bind(CommentController));
  *       400:
  *         description: Invalid ID format
  */
-router.get(
-  '/:id',
-  async (req, res, next) => {
-	try {
-	  await CommentController.GetById.call(CommentController, req, res);
-	} catch (err) {
-	  next(err);
-	}
+router.get("/:id", async (req, res, next) => {
+  try {
+    await CommentController.GetById.call(CommentController, req, res);
+  } catch (err) {
+    next(err);
   }
-);
+});
 
 /**
  * @swagger
  * /comments/{id}:
  *   put:
  *     summary: Update a comment by ID
- *     description: Updates the content of an existing comment.
+ *     description: Updates an existing comment.
  *     security:
- *       - bearerAuth: []  
+ *       - bearerAuth: []
  *     tags: [Comments]
  *     parameters:
  *       - in: path
@@ -194,102 +234,59 @@ router.get(
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               comment:
- *                 type: string
- *                 description: The updated content of the comment
- *             required:
- *               - comment
+ *             $ref: '#/components/schemas/UpdateCommentRequest'
  *     responses:
  *       200:
- *         description: The updated comment
+ *         description: Comment updated successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Comment'
- *       404:
- *         description: Comment not found
  *       400:
  *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Comment not found
  */
-router.put(
-  '/:id',
-  authMiddleware,
-  async (req, res, next) => {
-	try {
-	  await CommentController.UpdateItem.call(CommentController, req, res);
-	} catch (err) {
-	  next(err);
-	}
+router.put("/:id", authMiddleware, async (req, res, next) => {
+  try {
+    await CommentController.UpdateItem.call(CommentController, req, res);
+  } catch (err) {
+    next(err);
   }
-);
+});
 
 /**
  * @swagger
  * /comments/{id}:
  *   delete:
  *     summary: Delete a comment by ID
- *     description: Deletes a comment from the system by its unique ID.
+ *     description: Deletes a comment from the system.
  *     security:
- *       - bearerAuth: []  
+ *       - bearerAuth: []
  *     tags: [Comments]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         description: The ID of the comment to delete.
+ *         description: The ID of the comment to delete
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: Successfully deleted the comment
+ *         description: Comment deleted successfully
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Comment not found
  */
-router.delete(
-  '/:id',
-  authMiddleware,
-  async (req, res, next) => {
-	try {
-	  await CommentController.DeleteItem.call(CommentController, req, res);
-	} catch (err) {
-	  next(err);
-	}
-  }
-);
-
-/**
- * @swagger
- * /comments/post/{postId}:
- *   get:
- *     summary: Get comments for a specific post
- *     description: Retrieves all comments for the given postId.
- *     tags: [Comments]
- *     parameters:
- *       - in: path
- *         name: postId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: List of comments
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Comment'
- */
-router.get("/post/:postId", async (req, res) => {
+router.delete("/:id", authMiddleware, async (req, res, next) => {
   try {
-    const comments = await CommentModel.find({ postId: req.params.postId });
-    res.status(200).json(comments);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch comments" });
+    await CommentController.DeleteItem.call(CommentController, req, res);
+  } catch (err) {
+    next(err);
   }
 });
-
 
 export default router;

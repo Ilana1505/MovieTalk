@@ -235,7 +235,7 @@ const options = {
     },
     servers: [{ url: `http://localhost:${process.env.PORT}` }],
   },
-  apis: ["./src/routes/*.ts"],
+  ,
 };
 const specs = swaggerJsDoc(options);
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
