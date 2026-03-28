@@ -1,4 +1,5 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
+import bcrypt from "bcryptjs";
 import AuthController from "../controllers/auth.controller";
 import {
   authMiddleware,
@@ -8,7 +9,6 @@ import {
   updateUserProfile,
   getUserProfile,
 } from "../controllers/user.controller";
-import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model";
 
 const router = express.Router();
@@ -59,22 +59,16 @@ const router = express.Router();
  *       properties:
  *         _id:
  *           type: string
- *           example: "67d123abc456def789000111"
  *         email:
  *           type: string
- *           example: "user@gmail.com"
  *         fullName:
  *           type: string
- *           example: "Ilana Barkin"
  *         profilePicture:
  *           type: string
- *           example: "/uploads/profile-pictures/profile-123.jpg"
  *         accessToken:
  *           type: string
- *           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *         refreshToken:
  *           type: string
- *           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *
  *     RefreshRequest:
  *       type: object
@@ -83,7 +77,6 @@ const router = express.Router();
  *       properties:
  *         refreshToken:
  *           type: string
- *           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *
  *     GoogleLoginRequest:
  *       type: object
@@ -92,17 +85,14 @@ const router = express.Router();
  *       properties:
  *         token:
  *           type: string
- *           example: "google-id-token"
  *
  *     UpdateProfileRequest:
  *       type: object
  *       properties:
  *         fullName:
  *           type: string
- *           example: "Ilana Barkin"
  *         email:
  *           type: string
- *           example: "user@gmail.com"
  *
  *     ChangePasswordRequest:
  *       type: object
@@ -111,7 +101,6 @@ const router = express.Router();
  *       properties:
  *         password:
  *           type: string
- *           example: "123456"
  *
  *     MessageResponse:
  *       type: object
@@ -149,7 +138,7 @@ const router = express.Router();
  *       400:
  *         description: Invalid input or email already exists
  */
-router.post("/register", (req: Request, res: Response, next) => {
+router.post("/register", (req: Request, res: Response, next: NextFunction) => {
   AuthController.Register(req, res).catch(next);
 });
 
@@ -175,7 +164,7 @@ router.post("/register", (req: Request, res: Response, next) => {
  *       400:
  *         description: Wrong email or password
  */
-router.post("/login", (req: Request, res: Response, next) => {
+router.post("/login", (req: Request, res: Response, next: NextFunction) => {
   AuthController.Login(req, res).catch(next);
 });
 
@@ -199,7 +188,7 @@ router.post("/login", (req: Request, res: Response, next) => {
  *       403:
  *         description: Invalid token
  */
-router.post("/logout", (req: Request, res: Response, next) => {
+router.post("/logout", (req: Request, res: Response, next: NextFunction) => {
   AuthController.Logout(req, res).catch(next);
 });
 
@@ -218,21 +207,12 @@ router.post("/logout", (req: Request, res: Response, next) => {
  *     responses:
  *       200:
  *         description: Tokens refreshed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 accessToken:
- *                   type: string
- *                 refreshToken:
- *                   type: string
  *       400:
  *         description: Invalid token
  *       403:
  *         description: Invalid token
  */
-router.post("/refresh", (req: Request, res: Response, next) => {
+router.post("/refresh", (req: Request, res: Response, next: NextFunction) => {
   AuthController.Refresh(req, res).catch(next);
 });
 
@@ -251,10 +231,6 @@ router.post("/refresh", (req: Request, res: Response, next) => {
  *     responses:
  *       200:
  *         description: Google login successful
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AuthResponse'
  *       400:
  *         description: Missing or invalid Google token
  *       500:
@@ -263,6 +239,52 @@ router.post("/refresh", (req: Request, res: Response, next) => {
 router.post("/login-with-google", (req: Request, res: Response) => {
   AuthController.LoginWithGoogle(req, res);
 });
+
+/**
+ * @swagger
+ * /auth/profile:
+ *   get:
+ *     summary: Get current logged-in user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user profile
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+router.get(
+  "/profile",
+  authMiddleware,
+  (req: Request, res: Response, next: NextFunction) => {
+    getUserProfile(req as AuthenticatedRequest, res).catch(next);
+  }
+);
+
+/**
+ * @swagger
+ * /auth/check:
+ *   get:
+ *     summary: Check current logged-in user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user profile
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  "/check",
+  authMiddleware,
+  (req: Request, res: Response, next: NextFunction) => {
+    getUserProfile(req as AuthenticatedRequest, res).catch(next);
+  }
+);
 
 /**
  * @swagger
@@ -286,29 +308,13 @@ router.post("/login-with-google", (req: Request, res: Response) => {
  *       500:
  *         description: Server error
  */
-router.put("/update-profile", authMiddleware, (req: Request, res: Response, next) => {
-  updateUserProfile(req, res).catch(next);
-});
-
-/**
- * @swagger
- * /auth/check:
- *   get:
- *     summary: Get current logged-in user
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Current user profile
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: User not found
- */
-router.get("/check", authMiddleware, (req: Request, res: Response, next) => {
-  getUserProfile(req as AuthenticatedRequest, res).catch(next);
-});
+router.put(
+  "/update-profile",
+  authMiddleware,
+  (req: Request, res: Response, next: NextFunction) => {
+    updateUserProfile(req as AuthenticatedRequest, res).catch(next);
+  }
+);
 
 /**
  * @swagger
@@ -336,27 +342,33 @@ router.get("/check", authMiddleware, (req: Request, res: Response, next) => {
  *       401:
  *         description: Unauthorized
  */
-router.put("/change-password", authMiddleware, (req: Request, res: Response, next) => {
-  (async () => {
+router.put(
+  "/change-password",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const authReq = req as AuthenticatedRequest;
       const { password } = req.body;
-      const userId = (req as any).user._id;
+      const userId = authReq.user._id;
 
       if (!password || password.length < 6) {
-        return res
+        res
           .status(400)
           .json({ error: "Password must be at least 6 characters" });
+        return;
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
       await UserModel.findByIdAndUpdate(userId, { password: hashedPassword });
 
-      res.status(200).json({ message: "Password updated successfully" });
+      res
+        .status(200)
+        .json({ message: "Password updated successfully" });
     } catch (err) {
       console.error("Change password error", err);
       next(err);
     }
-  })();
-});
+  }
+);
 
 export default router;

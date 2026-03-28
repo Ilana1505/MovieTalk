@@ -2,7 +2,10 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { authMiddleware } from "../middleware/auth.middleware";
+import {
+  authMiddleware,
+  AuthenticatedRequest,
+} from "../middleware/auth.middleware";
 import UserModel from "../models/User.model";
 
 const router = express.Router();
@@ -13,8 +16,8 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `profile-${Date.now()}${ext}`);
   },
@@ -73,7 +76,7 @@ const upload = multer({ storage });
  * /users/upload-profile-pic:
  *   post:
  *     summary: Upload profile picture
- *     description: Uploads a new profile picture for the logged-in user.
+ *     description: Uploads a new profile picture for the logged-in user
  *     security:
  *       - bearerAuth: []
  *     tags: [Users]
@@ -92,27 +95,28 @@ const upload = multer({ storage });
  *     responses:
  *       200:
  *         description: Profile picture uploaded successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UploadProfilePictureResponse'
+ *       400:
+ *         description: No image uploaded
  *       401:
  *         description: Unauthorized
  *       500:
  *         description: Failed to upload profile picture
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post(
   "/upload-profile-pic",
-  authMiddleware,
   upload.single("image"),
+  authMiddleware,
   async (req, res) => {
     try {
-      const userId = (req as any).user._id;
-      const imageUrl = `/uploads/profile-pictures/${req.file?.filename}`;
+      const authReq = req as AuthenticatedRequest;
+      const userId = authReq.user._id;
+
+      if (!req.file) {
+        res.status(400).json({ error: "No image uploaded" });
+        return;
+      }
+
+      const imageUrl = `/uploads/profile-pictures/${req.file.filename}`;
 
       await UserModel.findByIdAndUpdate(userId, {
         profilePicture: imageUrl,
@@ -120,7 +124,9 @@ router.post(
 
       res.status(200).json({ profilePicture: imageUrl });
     } catch (err) {
-      res.status(500).json({ error: "Failed to upload profile picture" });
+      res
+        .status(500)
+        .json({ error: "Failed to upload profile picture" });
     }
   }
 );
@@ -130,31 +136,24 @@ router.post(
  * /users/delete:
  *   delete:
  *     summary: Delete user account
- *     description: Deletes the logged-in user's account.
+ *     description: Deletes the logged-in user's account
  *     security:
  *       - bearerAuth: []
  *     tags: [Users]
  *     responses:
  *       200:
  *         description: User deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/DeleteUserResponse'
  *       401:
  *         description: Unauthorized
  *       404:
  *         description: User not found
  *       500:
  *         description: Failed to delete account
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete("/delete", authMiddleware, async (req, res) => {
   try {
-    const userId = (req as any).user._id;
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user._id;
 
     const deletedUser = await UserModel.findByIdAndDelete(userId);
 

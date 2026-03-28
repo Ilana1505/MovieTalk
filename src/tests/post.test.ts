@@ -1,126 +1,136 @@
 import request from "supertest";
-import initApp from "../app";
-import mongoose from "mongoose";
-import PostModel from "../models/Post.model";
+import createApp from "../app";
 import { Express } from "express";
-import UserModel from "../models/User.model";
-import { beforeAll, afterAll, describe, test, expect } from '@jest/globals';
 
 let app: Express;
-
-type UserInfo = {
-    email: string;
-    password: string;
-    token?: string;
-    _id?: string;
-  };
-
-  const userInfo: UserInfo = {
-    email: "ilana@gmail.com",
-    password: "123456"
-  }
-  
-beforeAll(async () => {  
-    app = await initApp(); 
-    console.log("Before all tests");           
-    await PostModel.deleteMany();
-    await UserModel.deleteMany();
-    await request(app).post("/auth/register").send(userInfo);
-   const response = await request(app).post("/auth/login").send(userInfo);
-   userInfo.token = response.body.accessToken;
-   userInfo._id = response.body._id;
-});
-
-afterAll(async () => {          
-    console.log("After all tests");  
-    await mongoose.connection.close();       
-}); 
-
+let token = "";
 let postId = "";
 
-const testPost = {
-    title: "Test title",
-    content: "Test content",
-  }; 
-  
-const invalidPost = {
-    content: "Test content",
+const userInfo = {
+  fullName: "Ilana Barkin",
+  email: "ilana@gmail.com",
+  password: "123456",
 };
 
+const testPost = {
+  title: "Test title",
+  description: "Test description",
+  review: "Test review",
+};
+
+beforeAll(async () => {
+  app = createApp();
+
+  await request(app).post("/auth/register").send(userInfo);
+  const loginResponse = await request(app).post("/auth/login").send({
+    email: userInfo.email,
+    password: userInfo.password,
+  });
+
+  token = loginResponse.body.accessToken;
+});
+
 describe("Post test", () => {
+  test("get all posts empty", async () => {
+    const response = await request(app).get("/posts");
 
-    test("Test get all post", async () => {
-        const response = await request(app).get("/posts");
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toHaveLength(0);
-    });
+    expect(response.statusCode).toBe(200);
+    expect(response.body.posts).toHaveLength(0);
+  });
 
-    test("Test adding new post", async () => {
-        const response = await request(app).post("/posts")
-        .set("authorization", "Bearer " + userInfo.token)
-        .send(testPost);
-        expect(response.statusCode).toBe(201);
-        expect(response.body.title).toBe(testPost.title);
-        expect(response.body.content).toBe(testPost.content);
-        expect(response.body.sender).toBe(userInfo._id);
-        postId = response.body._id;
-    });
+  test("create post success", async () => {
+    const response = await request(app)
+      .post("/posts")
+      .set("Authorization", `Bearer ${token}`)
+      .field("title", testPost.title)
+      .field("description", testPost.description)
+      .field("review", testPost.review);
 
-    test("Test adding invalid post", async () => {
-        const response = await request(app).post("/posts").send(invalidPost);
-        expect(response.statusCode).not.toBe(201);
-    });
+    expect(response.statusCode).toBe(201);
+    expect(response.body.title).toBe(testPost.title);
+    expect(response.body.description).toBe(testPost.description);
+    expect(response.body.review).toBe(testPost.review);
 
-    test("Test get all posts after adding", async () => {
-        const response = await request(app).get("/posts");
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toHaveLength(1);
-    });
+    postId = response.body._id;
+  });
 
-    test("Test get post by sender", async () => {
-        const response = await request(app).get("/posts?sender=" + userInfo._id);        
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toHaveLength(1);
-        expect(response.body[0].sender).toBe(userInfo._id);
-    });
+  test("create post fail without token", async () => {
+    const response = await request(app).post("/posts").send(testPost);
 
-    test("Test get posts by sender fail", async () => {
-        const response = await request(app).get("/posts?sender=nonexistentUser");
-        expect(response.statusCode).toBe(200);
-        expect(response.body).toHaveLength(0);  
-    });
-    
-    test("Test get post by id", async () => {
-        const response = await request(app).get("/posts/" + postId);
-        expect(response.statusCode).toBe(200);
-        expect(response.body._id).toBe(postId);
-    });
+    expect(response.statusCode).toBe(401);
+    expect(response.body.message).toBe("No valid token provided");
+  });
 
-    test("Test get post by id fail", async () => {
-        const response = await request(app).get("/posts/6779946864cff57e00fb4694");
-        expect(response.statusCode).toBe(404);
-    });
+  test("get all posts after adding", async () => {
+    const response = await request(app).get("/posts");
 
-    test("Test update post", async () => {
-        const response = await request(app).put("/posts/" + postId)
-        .set("authorization", "Bearer " + userInfo.token)
-        .send({ title: "Update Title", content: "Updated Content" });
-        expect(response.statusCode).toBe(200);
-        expect(response.body.title).toBe("Update Title");
-        expect(response.body.content).toBe("Updated Content");
-    });
+    expect(response.statusCode).toBe(200);
+    expect(response.body.posts).toHaveLength(1);
+  });
 
-    test("Test delete post", async () => {
-        const response = await request(app).delete("/posts/" + postId)
-        .set("authorization", "Bearer " + userInfo.token);
-        expect(response.statusCode).toBe(200);
-        const responseGet = await request(app).get("/posts/" + postId);
-        expect(responseGet.statusCode).toBe(404);
-    });
+  test("get post by id", async () => {
+    const response = await request(app).get(`/posts/${postId}`);
 
-    test("Test delete post not found", async () => {
-        const response = await request(app).delete("/posts/1234567890")
-        .set("authorization", "Bearer " + userInfo.token);
-        expect(response.statusCode).toBe(404);
-    });
+    expect(response.statusCode).toBe(200);
+    expect(response.body._id).toBe(postId);
+  });
+
+  test("get post by id fail", async () => {
+    const response = await request(app).get(
+      "/posts/6779946864cff57e00fb4694"
+    );
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  test("update own post", async () => {
+    const response = await request(app)
+      .put(`/posts/${postId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .field("title", "Updated Title")
+      .field("description", "Updated Description")
+      .field("review", "Updated Review");
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.title).toBe("Updated Title");
+    expect(response.body.description).toBe("Updated Description");
+    expect(response.body.review).toBe("Updated Review");
+  });
+
+  test("toggle like success", async () => {
+    const response = await request(app)
+      .post(`/posts/${postId}/like`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.message).toBe("Post liked");
+    expect(response.body.likes).toBe(1);
+  });
+
+test("toggle unlike success", async () => {
+  const response = await request(app)
+    .post(`/posts/${postId}/like`)
+    .set("Authorization", `Bearer ${token}`);
+
+  expect(response.statusCode).toBe(200);
+  expect(response.body.message).toBe("Like removed");
+});
+
+  test("get my posts", async () => {
+    const response = await request(app)
+      .get("/posts/my-posts")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
+  });
+
+  test("delete own post", async () => {
+    const response = await request(app)
+      .delete(`/posts/${postId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.message).toBe("Post deleted successfully");
+  });
 });

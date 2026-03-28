@@ -2,6 +2,8 @@ import CommentModel, { iComment } from "../models/Comment.model";
 import UserModel from "../models/User.model";
 import { Request, Response } from "express";
 import BaseController from "./base.controller";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import mongoose from "mongoose";
 
 class CommentController extends BaseController<iComment> {
   constructor() {
@@ -10,36 +12,49 @@ class CommentController extends BaseController<iComment> {
 
   async CreateItem(req: Request, res: Response): Promise<void> {
     try {
-      const u = (req as any).user || {};
-      const userId = u._id || u.id;
+      const authReq = req as AuthenticatedRequest;
+      const user = authReq.user || {};
+      const userId = user._id || (user as any).id;
+
       if (!userId) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ message: "No valid token provided" });
+        return;
+      }
+
+      const postId = req.body.postId;
+      const commentText = req.body.comment;
+
+      if (!postId || !commentText) {
+        res.status(400).json({ message: "Missing comment or postId" });
+        return;
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(postId)) {
+        res.status(400).json({ message: "Invalid postId" });
         return;
       }
 
       const fromDb =
-        !u.fullName || !u.profilePicture
+        !(user as any).fullName || !(user as any).profilePicture
           ? await UserModel.findById(userId)
               .select("fullName profilePicture")
-              .lean()
+              .lean() as { fullName?: string; profilePicture?: string } | null
           : null;
 
-      const senderName =
-        u.fullName || fromDb?.fullName || "Anonymous";
+      const senderName = (user as any).fullName || fromDb?.fullName || "Anonymous";
+      const senderAvatar = (user as any).profilePicture || fromDb?.profilePicture || "";
 
-      const senderAvatar =
-        u.profilePicture || fromDb?.profilePicture || undefined;
+      const createdComment = await CommentModel.create({
+        comment: commentText,
+        postId,
+        sender: senderName,
+        senderAvatar,
+        senderId: String(userId),
+      });
 
-      req.body = {
-        ...req.body,
-        sender: senderName,          
-        senderAvatar,                 
-        senderId: String(userId),     
-      };
-
-      await super.CreateItem(req, res);
+      res.status(201).json(createdComment);
     } catch (e) {
-      console.error(e);
+      console.error("Failed to add comment:", e);
       res.status(500).json({ error: "Failed to add comment" });
     }
   }

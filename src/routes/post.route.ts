@@ -178,7 +178,7 @@ router.get("/", async (req, res) => {
  *         description: Unauthorized
  */
 router.get("/my-posts", authMiddleware, (req, res) => {
-  return getUserPosts(req as any, res);
+  getUserPosts(req as any, res);
 });
 
 /**
