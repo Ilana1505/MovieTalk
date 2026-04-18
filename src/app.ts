@@ -16,12 +16,14 @@ import aiRoute from "./routes/ai.route";
 const createApp = (): Express => {
   const app = express();
 
-  app.use(
-    cors({
-      origin: "http://localhost:3001",
-      credentials: true,
-    })
-  );
+ const allowedOrigin = process.env.CLIENT_URL || "http://localhost:3001";
+
+app.use(
+  cors({
+    origin: allowedOrigin,
+    credentials: true,
+  })
+);
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -54,8 +56,11 @@ const createApp = (): Express => {
         version: "1.0.0",
         description: "Movie review app with JWT",
       },
-      servers: [{ url: `http://localhost:${process.env.PORT || 3000}` }],
-    },
+servers: [
+  {
+    url: process.env.SERVER_URL || `http://localhost:${process.env.PORT || 3000}`,
+  },
+],    },
     apis: ["./src/routes/*.ts"],
   };
 
