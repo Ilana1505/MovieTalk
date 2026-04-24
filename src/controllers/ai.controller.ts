@@ -10,9 +10,10 @@ const ai = process.env.GEMINI_API_KEY
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const isGeminiBusy = (err: any) => {
-  const status = err?.status || err?.response?.status;
-  const msg = String(err?.message || "");
+const isGeminiBusy = (err: unknown) => {
+  const errObj = err as { status?: number; response?: { status?: number }; message?: string };
+  const status = errObj?.status || errObj?.response?.status;
+  const msg = String(errObj?.message || "");
   return (
     status === 503 ||
     msg.includes('"code":503') ||
@@ -21,13 +22,10 @@ const isGeminiBusy = (err: any) => {
   );
 };
 
-// ניקוי תגובה כדי ש-JSON.parse לא ייפול אם Gemini מחזיר ```json ... ```
+
 const cleanGeminiJson = (raw: string) =>
   raw.replace(/```json/gi, "").replace(/```/g, "").trim();
 
-// ----------------------------------------------------
-// 1) Generate description (AI)
-// ----------------------------------------------------
 export const generateDescription = async (
   req: Request,
   res: Response
@@ -62,7 +60,7 @@ export const generateDescription = async (
     let response;
     try {
       response = await callGemini();
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (isGeminiBusy(err)) {
         await sleep(700);
         response = await callGemini();
@@ -79,17 +77,18 @@ export const generateDescription = async (
     }
 
     res.json({ description });
-  } catch (err: any) {
-    const status = err?.status || err?.response?.status;
-    const message = err?.message || err?.response?.data?.error?.message;
+  } catch (err: unknown) {
+    const errObj = err as { status?: number; response?: { status?: number; data?: { error?: { message?: string } } }; message?: string; name?: string; code?: string; stack?: string };
+    const status = errObj?.status || errObj?.response?.status;
+    const message = errObj?.message || errObj?.response?.data?.error?.message;
 
     console.error("=== Gemini generateDescription error ===");
     console.error("message:", message);
-    console.error("name:", err?.name);
+    console.error("name:", errObj?.name);
     console.error("status:", status);
-    console.error("code:", err?.code);
-    console.error("response:", err?.response?.data);
-    console.error("stack:", err?.stack);
+    console.error("code:", errObj?.code);
+    console.error("response:", errObj?.response?.data);
+    console.error("stack:", errObj?.stack);
     console.error("=======================================");
 
     if (status === 429) {
@@ -131,7 +130,6 @@ export const freeSearchPosts = async (
 
     const q = query.trim();
 
-    // 1) חיפוש רגיל
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const cheapRx = new RegExp(escaped, "i");
 
@@ -143,14 +141,12 @@ export const freeSearchPosts = async (
       ],
     }).sort({ _id: -1 });
 
-    // 2) חיפוש חכם עם AI
-    // ניקח יותר מועמדים כדי שה-AI יראה יותר פוסטים, לא רק 50
     const candidates = await PostModel.find({})
       .sort({ _id: -1 })
       .limit(150)
       .select("_id title description review");
 
-    let semanticOrdered: any[] = [];
+    let semanticOrdered: typeof candidates = [];
     let pickedIds: string[] = [];
 
     if (candidates.length > 0) {
@@ -187,7 +183,7 @@ ${JSON.stringify(items)}
       let aiResp;
       try {
         aiResp = await callGemini();
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (isGeminiBusy(err)) {
           await sleep(700);
           aiResp = await callGemini();
@@ -204,7 +200,7 @@ ${JSON.stringify(items)}
       try {
         const parsed = JSON.parse(cleaned);
         if (Array.isArray(parsed.ids)) {
-          pickedIds = parsed.ids.map((x: any) => String(x));
+          pickedIds = parsed.ids.map((x: string | number) => String(x));
         }
       } catch {
         pickedIds = [];
@@ -217,15 +213,14 @@ ${JSON.stringify(items)}
         const docMap = new Map(docs.map((d) => [String(d._id), d]));
         semanticOrdered = pickedIds
           .map((id) => docMap.get(id))
-          .filter(Boolean);
+          .filter((doc): doc is Exclude<typeof doc, undefined> => !!doc);
       }
     }
 
-    // 3) מיזוג תוצאות: קודם רגיל, אחר כך חכם, בלי כפילויות
     const merged = [...cheapResults, ...semanticOrdered];
     const seen = new Set<string>();
 
-    const uniqueResults = merged.filter((post: any) => {
+    const uniqueResults = merged.filter((post) => {
       const id = String(post._id);
       if (seen.has(id)) return false;
       seen.add(id);
@@ -240,14 +235,15 @@ ${JSON.stringify(items)}
         pickedIds,
       },
     });
-  } catch (err: any) {
-    const status = err?.status || err?.response?.status;
-    const message = err?.message || err?.response?.data?.error?.message;
+  } catch (err: unknown) {
+    const errObj = err as { status?: number; response?: { status?: number; data?: { error?: { message?: string } } }; message?: string; stack?: string };
+    const status = errObj?.status || errObj?.response?.status;
+    const message = errObj?.message || errObj?.response?.data?.error?.message;
 
     console.error("=== Gemini freeSearchPosts error ===");
     console.error("message:", message);
     console.error("status:", status);
-    console.error("stack:", err?.stack);
+    console.error("stack:", errObj?.stack);
 
     if (status === 429) {
       res.status(429).json({

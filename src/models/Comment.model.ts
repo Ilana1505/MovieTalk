@@ -12,7 +12,7 @@ const CommentSchema = new mongoose.Schema<iComment>({
   comment: { type: String, required: true },
   postId: { type: String, required: true },
   sender: { type: String, required: true },
-  senderAvatar: { type: String },   // חדש
+  senderAvatar: { type: String },   
   senderId: { type: String }, 
 });
 

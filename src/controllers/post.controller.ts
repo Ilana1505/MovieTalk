@@ -16,7 +16,7 @@ class PostController extends BaseController<iPost> {
       const limit = Math.max(parseInt(req.query.limit as string) || 5, 1);
       const skip = (page - 1) * limit;
 
-      const filter: Record<string, any> = {};
+      const filter: Record<string, string | undefined> = {};
 
       if (typeof sender === "string" && sender.trim()) {
         filter.sender = sender;

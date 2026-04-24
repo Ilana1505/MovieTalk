@@ -123,7 +123,7 @@ router.post(
       });
 
       res.status(200).json({ profilePicture: imageUrl });
-    } catch (err) {
+    } catch {
       res
         .status(500)
         .json({ error: "Failed to upload profile picture" });
@@ -163,7 +163,7 @@ router.delete("/delete", authMiddleware, async (req, res) => {
     }
 
     res.status(200).json({ message: "User deleted successfully" });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to delete account" });
   }
 });

@@ -174,7 +174,7 @@ router.get("/post/:postId", async (req, res) => {
   try {
     const comments = await CommentModel.find({ postId: req.params.postId });
     res.status(200).json(comments);
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: "Failed to fetch comments" });
   }
 });

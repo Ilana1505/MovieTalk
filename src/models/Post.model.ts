@@ -6,8 +6,8 @@ export interface iPost extends Document {
   review: string;
   image?: string;
   sender: mongoose.Types.ObjectId;
-  likes: string[]; // userIds
-  comments: mongoose.Types.ObjectId[]; // comment IDs
+  likes: string[]; 
+  comments: mongoose.Types.ObjectId[]; 
 }
 
 const PostSchema = new Schema<iPost>(

@@ -1,6 +1,7 @@
 import express from "express";
 import PostController from "../controllers/post.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
+import type { AuthenticatedRequest } from "../middleware/auth.middleware";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -178,7 +179,7 @@ router.get("/", async (req, res) => {
  *         description: Unauthorized
  */
 router.get("/my-posts", authMiddleware, (req, res) => {
-  getUserPosts(req as any, res);
+  getUserPosts(req as AuthenticatedRequest, res);
 });
 
 /**
@@ -214,7 +215,7 @@ router.get("/:id", (req, res) => {
  *     tags: [Posts]
  */
 router.put("/:id", authMiddleware, upload.single("image"), async (req, res) => {
-  await PostController.updateOwnPost(req as any, res);
+  await PostController.updateOwnPost(req as AuthenticatedRequest, res);
 });
 
 /**
@@ -227,7 +228,7 @@ router.put("/:id", authMiddleware, upload.single("image"), async (req, res) => {
  *     tags: [Posts]
  */
 router.delete("/:id", authMiddleware, async (req, res) => {
-  await PostController.deleteOwnPost(req as any, res);
+  await PostController.deleteOwnPost(req as AuthenticatedRequest, res);
 });
 
 /**

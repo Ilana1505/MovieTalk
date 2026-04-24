@@ -14,7 +14,7 @@ class CommentController extends BaseController<iComment> {
     try {
       const authReq = req as AuthenticatedRequest;
       const user = authReq.user || {};
-      const userId = user._id || (user as any).id;
+      const userId = (user && '_id' in user ? user._id : null) || (user && 'id' in user ? user.id : null);
 
       if (!userId) {
         res.status(401).json({ message: "No valid token provided" });
@@ -34,15 +34,15 @@ class CommentController extends BaseController<iComment> {
         return;
       }
 
-      const fromDb =
-        !(user as any).fullName || !(user as any).profilePicture
+      const userHasDetails = user && 'fullName' in user && 'profilePicture' in user;
+      const fromDb = !userHasDetails
           ? await UserModel.findById(userId)
               .select("fullName profilePicture")
               .lean() as { fullName?: string; profilePicture?: string } | null
           : null;
 
-      const senderName = (user as any).fullName || fromDb?.fullName || "Anonymous";
-      const senderAvatar = (user as any).profilePicture || fromDb?.profilePicture || "";
+      const senderName = (user && 'fullName' in user ? user.fullName : null) || fromDb?.fullName || "Anonymous";
+      const senderAvatar = (user && 'profilePicture' in user ? user.profilePicture : null) || fromDb?.profilePicture || "";
 
       const createdComment = await CommentModel.create({
         comment: commentText,
